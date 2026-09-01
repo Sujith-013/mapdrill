@@ -20,7 +20,16 @@
 
 .map-surface path {
   stroke: var(--hairline-color);
-  stroke-width: var(--hairline-width);
+  /* On a fully-solved (or any single-fill) map, these borders are the only
+     structure left — --hairline-width alone (0.75, tuned as a viewBox-unit
+     hairline) read as almost invisible next to a bold state fill, so it's
+     doubled here. non-scaling-stroke keeps that weight in real screen
+     pixels regardless of the pack's viewBox scale or the render size —
+     without it, the same value would render thinner on a smaller pack or
+     a smaller container, exactly the "consistent at any render size" this
+     is meant to avoid depending on. */
+  stroke-width: calc(var(--hairline-width) * 2);
+  vector-effect: non-scaling-stroke;
   pointer-events: none;
   cursor: default;
 }

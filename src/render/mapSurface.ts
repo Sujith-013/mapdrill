@@ -9,8 +9,10 @@
  * and theme.ts for the token names behind those classes.
  *
  * Labels are delegated to labels.ts's createLabelLayer: applyState hands it
- * the same session's targetStates on every call, and the layer's own
- * suppressed-list return is threaded back out of applyState.
+ * the same session's targetStates on every call, plus each target's own
+ * polygon (for the containment constraint — see labels.ts) and the
+ * viewBox-derived font size, and the layer's own suppressed-list return is
+ * threaded back out of applyState.
  */
 import type { Pack, Session, Target, TargetState } from '../engine/types';
 import { createLabelLayer, fontSizeForViewBox } from './labels';
@@ -67,11 +69,18 @@ export function createMapSurface(
   svg.classList.add('map-surface');
 
   const bound = new Map<Target['id'], BoundPath>();
+  // Same `d` strings the paths above are drawn from, keyed by target id
+  // instead of pathId — labels.ts's containment constraint needs each
+  // target's own polygon to keep its label off a neighbour's territory.
+  const labelPolygons = new Map<Target['id'], string>();
   for (const target of pack.targets) {
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('id', target.id);
     const d = pathData.get(target.pathId);
-    if (d) path.setAttribute('d', d);
+    if (d) {
+      path.setAttribute('d', d);
+      labelPolygons.set(target.id, d);
+    }
     svg.appendChild(path);
 
     const group = groupById.get(target.groupId);
@@ -116,6 +125,7 @@ export function createMapSurface(
     const targetStates = lastSession?.targetStates ?? new Map<Target['id'], TargetState>();
     lastSuppressed = labelLayer.applyLayout(pack.targets, targetStates, {
       fontSize: labelFontSize,
+      polygons: labelPolygons,
     }).suppressed;
   }
 

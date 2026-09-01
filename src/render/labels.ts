@@ -1,12 +1,15 @@
 /**
  * Label placement solver: positions one label per visible target at
- * target.labelPoint, resolving collisions by greedy first-fit across the 8
- * compass anchors, honouring each target's hand-tuned labelAnchor as the
- * first candidate. The solver (everything above `createLabelLayer`) is
- * pure geometry — no DOM, no correctness decisions about the session.
- * `createLabelLayer` is the DOM wrapper around it: it consumes the
- * solver's output to draw, it never feeds back into how the solver
- * decides a layout.
+ * target.labelPoint, resolving collisions across the 8 compass anchors,
+ * honouring each target's hand-tuned labelAnchor as the first candidate.
+ * When polygon data is supplied (LabelLayoutOptions.polygons), placement is
+ * also containment-aware: an anchor whose box lands inside the target's own
+ * district beats one that doesn't, and landing inside a *different*
+ * district is avoided outright — see placeSingleLabel. The solver
+ * (everything above `createLabelLayer`) is pure geometry — no DOM, no
+ * correctness decisions about the session. `createLabelLayer` is the DOM
+ * wrapper around it: it consumes the solver's output to draw, it never
+ * feeds back into how the solver decides a layout.
  */
 import type { LabelAnchor, Target, TargetState } from '../engine/types';
 
@@ -26,7 +29,12 @@ export interface LabelPlacement {
   targetId: Target['id'];
   anchor: LabelAnchor;
   box: LabelBox;
-  /** true once placement fell back to the far ring — the renderer should draw a leader line back to target.labelPoint. */
+  /**
+   * true if the renderer should draw a leader line back to target.labelPoint:
+   * either this placement fell back to the far ring, or (with containment
+   * data) it isn't inside the target's own district — either way it needs
+   * the visual tether back to where it actually belongs.
+   */
   leader: boolean;
 }
 
@@ -38,6 +46,16 @@ export interface LabelLayoutResult {
 
 export interface LabelLayoutOptions {
   fontSize?: number;
+  /**
+   * Raw `d` attribute per target id, geometry.svg's own coordinate space
+   * (same as labelPoint). Drives the containment constraint: a candidate
+   * anchor whose box centre lands inside the target's own polygon is
+   * strongly preferred over one that doesn't, and one that lands inside a
+   * *different* target's polygon is actively avoided (see placeSingleLabel).
+   * Omit to fall back to pre-containment behaviour: first collision-free
+   * anchor wins, leader only at FAR_GAP.
+   */
+  polygons?: ReadonlyMap<Target['id'], string>;
 }
 
 /** States a label is ever shown for. Never 'unsolved' — that's the whole point of Mode B's reveal-on-solve. */
@@ -162,12 +180,196 @@ function fitsAnywhere(
   return null;
 }
 
+// --- Containment: point-in-polygon against a target's own district shape ---
+//
+// geometry.svg's contract (docs/PACK-SPEC.md) guarantees every <path> is
+// M/L/Z only — no curves, no arcs, no transforms — so a district's shape is
+// exactly its listed vertices; parsePathRings below isn't a general SVG
+// path parser, it only needs to handle that subset. Multiple M...Z groups
+// in one `d` are multiple rings of the same district (e.g. a mainland plus
+// a small offshore part); pointInPolygon's even-odd test sums crossings
+// across every ring, which handles that correctly without special-casing it.
+
+interface BBox {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+export interface Polygon {
+  rings: Point[][];
+  bbox: BBox;
+}
+
+function parsePathRings(d: string): Point[][] {
+  const rings: Point[][] = [];
+  let current: Point[] = [];
+  let cmd: 'M' | 'L' | 'Z' | null = null;
+  for (const token of d.split(/([MLZ])/)) {
+    const trimmed = token.trim();
+    if (trimmed === '') continue;
+    if (trimmed === 'M' || trimmed === 'L' || trimmed === 'Z') {
+      if (trimmed === 'Z') {
+        if (current.length) rings.push(current);
+        current = [];
+      }
+      cmd = trimmed;
+      continue;
+    }
+    if (cmd === 'M' || cmd === 'L') {
+      const nums = trimmed.split(/\s+/).map(Number);
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        current.push({ x: nums[i]!, y: nums[i + 1]! });
+      }
+    }
+  }
+  if (current.length) rings.push(current);
+  return rings;
+}
+
+/** Parses a geometry.svg `d` attribute into a Polygon (rings + bbox) for pointInPolygon. */
+export function polygonFromPath(d: string): Polygon {
+  const rings = parsePathRings(d);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const ring of rings) {
+    for (const p of ring) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  return { rings, bbox: { minX, minY, maxX, maxY } };
+}
+
+function inBBox(p: Point, box: BBox): boolean {
+  return p.x >= box.minX && p.x <= box.maxX && p.y >= box.minY && p.y <= box.maxY;
+}
+
+/**
+ * Even-odd point-in-polygon (ray casting), bbox-rejected first — cheap:
+ * with 52 districts and 8 anchors per target that's at most 416 full tests,
+ * and the bbox check turns most of those into a handful of comparisons
+ * instead of a walk over every edge.
+ */
+export function pointInPolygon(point: Point, polygon: Polygon): boolean {
+  if (!inBBox(point, polygon.bbox)) return false;
+
+  let inside = false;
+  for (const ring of polygon.rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i]!;
+      const b = ring[j]!;
+      if (a.y > point.y !== b.y > point.y) {
+        const xIntersect = a.x + ((point.y - a.y) / (b.y - a.y)) * (b.x - a.x);
+        if (point.x < xIntersect) inside = !inside;
+      }
+    }
+  }
+  return inside;
+}
+
+function unionBBox(polygons: ReadonlyMap<Target['id'], Polygon>): BBox {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const { bbox } of polygons.values()) {
+    if (bbox.minX < minX) minX = bbox.minX;
+    if (bbox.maxX > maxX) maxX = bbox.maxX;
+    if (bbox.minY < minY) minY = bbox.minY;
+    if (bbox.maxY > maxY) maxY = bbox.maxY;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+/** Where a candidate anchor's box centre lands, worst to best is implicit in TIER_RANK below. */
+type ContainmentTier = 'own' | 'neutral' | 'other';
+
+const TIER_RANK: Record<ContainmentTier, number> = { own: 0, neutral: 1, other: 2 };
+
+interface ContainmentContext {
+  ownId: Target['id'];
+  polygons: ReadonlyMap<Target['id'], Polygon>;
+  mapBBox: BBox;
+}
+
+function containmentTier(center: Point, ctx: ContainmentContext): ContainmentTier {
+  const own = ctx.polygons.get(ctx.ownId);
+  if (own && pointInPolygon(center, own)) return 'own';
+  for (const [id, polygon] of ctx.polygons) {
+    if (id === ctx.ownId) continue;
+    if (pointInPolygon(center, polygon)) return 'other'; // sitting on a neighbour actively misinforms
+  }
+  return 'neutral'; // empty sea/margin — worse than 'own', better than 'other'
+}
+
+interface RankedCandidate {
+  anchor: LabelAnchor;
+  box: LabelBox;
+  tier: ContainmentTier;
+}
+
+/**
+ * Best-ranked anchor in `order` at `gap`: collision and map-bounds are hard
+ * constraints (never violated), containment tier ('own' beats 'neutral'
+ * beats 'other') ranks what's left, ties broken by `order`'s position
+ * (canonical order, labelAnchor first). Early-exits the moment an 'own'
+ * candidate is found — nothing can outrank it.
+ */
+function bestFit(
+  point: Point,
+  order: readonly LabelAnchor[],
+  width: number,
+  height: number,
+  gap: number,
+  placed: readonly LabelBox[],
+  ctx: ContainmentContext,
+): RankedCandidate | null {
+  let best: RankedCandidate | null = null;
+  for (const anchor of order) {
+    const box = boxForAnchor(point, anchor, width, height, gap);
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    if (!inBBox(center, ctx.mapBBox)) continue;
+    if (!placed.every((p) => !overlaps(p, box))) continue;
+
+    const tier = containmentTier(center, ctx);
+    // 'other' is a hard reject, not just a low rank: a label sitting on a
+    // neighbour's territory actively misinforms, which is worse than this
+    // target simply not getting a near/inside placement this round — it's
+    // treated the same as a collision, never chosen over nothing.
+    if (tier === 'other') continue;
+
+    if (!best || TIER_RANK[tier] < TIER_RANK[best.tier]) {
+      best = { anchor, box, tier };
+      if (tier === 'own') break;
+    }
+  }
+  return best;
+}
+
 /**
  * Places a single label against already-placed boxes: `labelAnchor` first
  * (the hand-tuned override always gets the first try, never overridden by
  * the solver), then the remaining 7 anchors in canonical order, at
- * NEAR_GAP. If all 8 collide, the same 8 again at FAR_GAP (leader line). If
- * that also fails, null — the caller should suppress this label.
+ * NEAR_GAP. If all 8 collide, the same 8 again at FAR_GAP. If that also
+ * fails, null — the caller should suppress this label.
+ *
+ * Without `containment` (no polygon data supplied): first collision-free
+ * anchor wins outright, leader only at FAR_GAP — the original rule.
+ *
+ * With `containment`: NEAR_GAP is only accepted if it also lands inside
+ * the target's own district (tried first, so a same-tier near candidate
+ * always beats a far one); otherwise every collision-free, in-bounds
+ * candidate from both rings is ranked — own district beats empty margin
+ * beats a neighbour's district — and the winner gets a leader line,
+ * because anything other than 'own' needs one to still read as belonging
+ * to this target (see labels.ts's LabelLayoutOptions.polygons doc).
  */
 export function placeSingleLabel(
   point: Point,
@@ -175,16 +377,30 @@ export function placeSingleLabel(
   width: number,
   height: number,
   placed: readonly LabelBox[],
+  containment?: ContainmentContext,
 ): { anchor: LabelAnchor; box: LabelBox; leader: boolean } | null {
   const order = [labelAnchor, ...ANCHOR_ORDER.filter((a) => a !== labelAnchor)];
 
-  const near = fitsAnywhere(point, order, width, height, NEAR_GAP, placed);
-  if (near) return { ...near, leader: false };
+  if (!containment) {
+    const near = fitsAnywhere(point, order, width, height, NEAR_GAP, placed);
+    if (near) return { ...near, leader: false };
 
-  const far = fitsAnywhere(point, order, width, height, FAR_GAP, placed);
-  if (far) return { ...far, leader: true };
+    const far = fitsAnywhere(point, order, width, height, FAR_GAP, placed);
+    if (far) return { ...far, leader: true };
 
-  return null;
+    return null;
+  }
+
+  const near = bestFit(point, order, width, height, NEAR_GAP, placed, containment);
+  if (near?.tier === 'own') return { anchor: near.anchor, box: near.box, leader: false };
+
+  const far = bestFit(point, order, width, height, FAR_GAP, placed, containment);
+  const candidates = [near, far].filter((c): c is RankedCandidate => c !== null);
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier]); // stable: near (listed first) wins ties
+  const winner = candidates[0]!;
+  return { anchor: winner.anchor, box: winner.box, leader: true };
 }
 
 /**
@@ -195,7 +411,11 @@ export function placeSingleLabel(
  * O(n * anchors * placed): each of the n visible targets tries a constant
  * 16 candidate boxes (8 anchors x 2 gap rounds), each checked against the
  * boxes placed so far with an early-exit scan (`Array.every` stops at the
- * first collision, `fitsAnywhere` stops at the first anchor that fits).
+ * first collision). With containment data, each of those 16 also runs a
+ * point-in-polygon check against every district (bbox-rejected first, so
+ * most are a handful of comparisons, not a walk of every edge) — worst
+ * case 52 districts x 8 anchors x 2 rounds x 52 targets, still cheap
+ * (measured: see the "solves fast" test below).
  */
 export function layoutLabels(
   targets: readonly Target[],
@@ -206,13 +426,34 @@ export function layoutLabels(
   const visible = targets.filter((t) => isLabelworthy(targetStates.get(t.id))).slice();
   visible.sort((a, b) => a.tier - b.tier);
 
+  // Parsed once per call, reused for every target's containment check below —
+  // not cached across calls.
+  // ponytail: re-parses all district polygons from scratch on every
+  // layoutLabels call (every mapSurface render, i.e. every state change),
+  // rather than once per pack. Cheap in practice (52 simple M/L/Z paths),
+  // but if that ever shows up in a profile, cache Polygon[] per pack.viewBox
+  // + geometrySvg identity instead of per-call.
+  const polygons = options.polygons
+    ? new Map([...options.polygons].map(([id, d]) => [id, polygonFromPath(d)]))
+    : undefined;
+  const mapBBox = polygons ? unionBBox(polygons) : undefined;
+
   const placed: LabelBox[] = [];
   const placements: LabelPlacement[] = [];
   const suppressed: Array<Target['id']> = [];
 
   for (const target of visible) {
     const { width, height } = estimateLabelSize(target.name, fontSize);
-    const result = placeSingleLabel(target.labelPoint, target.labelAnchor, width, height, placed);
+    const containment: ContainmentContext | undefined =
+      polygons && mapBBox ? { ownId: target.id, polygons, mapBBox } : undefined;
+    const result = placeSingleLabel(
+      target.labelPoint,
+      target.labelAnchor,
+      width,
+      height,
+      placed,
+      containment,
+    );
     if (result) {
       placements.push({
         targetId: target.id,

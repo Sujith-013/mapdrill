@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import southIndiaPackJson from '../packs/south-india-districts/pack.json';
 import {
@@ -11,11 +13,33 @@ import {
   layoutLabels,
   NEAR_GAP,
   placeSingleLabel,
+  pointInPolygon,
+  polygonFromPath,
   type LabelBox,
 } from '../src/render/labels';
 import type { LabelAnchor, Pack, Target, TargetState } from '../src/engine/types';
 
 const southIndiaPack = southIndiaPackJson as unknown as Pack;
+
+/** Real geometry.svg, keyed by target id like mapSurface.ts threads it into applyLayout. */
+function southIndiaPolygons(): Map<string, string> {
+  const geometrySvg = readFileSync(
+    join(__dirname, '../packs/south-india-districts/geometry.svg'),
+    'utf-8',
+  );
+  const doc = new DOMParser().parseFromString(geometrySvg, 'image/svg+xml');
+  const byPathId = new Map<string, string>();
+  for (const path of doc.querySelectorAll('path[id]')) {
+    const id = path.getAttribute('id');
+    const d = path.getAttribute('d');
+    if (id && d) byPathId.set(id, d);
+  }
+  return new Map(
+    southIndiaPack.targets
+      .filter((t) => byPathId.has(t.pathId))
+      .map((t) => [t.id, byPathId.get(t.pathId)!]),
+  );
+}
 
 function makeTarget(overrides: Partial<Target> & Pick<Target, 'id' | 'name'>): Target {
   return {
@@ -272,5 +296,172 @@ describe('createLabelLayer', () => {
       'Bravo',
     ]);
     expect(layer.el.children.length).toBe(1); // no leaked leader lines or duplicate nodes either
+  });
+});
+
+describe('pointInPolygon', () => {
+  const square = polygonFromPath('M0 0 L100 0 L100 100 L0 100 Z');
+
+  it('is true inside, false outside, on the bbox fast-path and off it', () => {
+    expect(pointInPolygon({ x: 50, y: 50 }, square)).toBe(true);
+    expect(pointInPolygon({ x: 500, y: 500 }, square)).toBe(false); // outside the bbox entirely
+    expect(pointInPolygon({ x: 50, y: 150 }, square)).toBe(false); // inside the bbox's x-span, outside the shape
+  });
+
+  it('sums crossings across every M...Z ring, for a multi-part (island) district', () => {
+    // A mainland square plus a small detached island square, one path.
+    const multi = polygonFromPath(
+      'M0 0 L100 0 L100 100 L0 100 Z M300 300 L320 300 L320 320 L300 320 Z',
+    );
+    expect(pointInPolygon({ x: 50, y: 50 }, multi)).toBe(true); // mainland
+    expect(pointInPolygon({ x: 310, y: 310 }, multi)).toBe(true); // island
+    expect(pointInPolygon({ x: 200, y: 200 }, multi)).toBe(false); // the sea between them
+  });
+});
+
+describe('containment (labels stay in their own district)', () => {
+  it('prefers an anchor inside its own district over one that is merely collision-free but outside it', () => {
+    const dA = 'M0 300 L200 300 L200 500 L0 500 Z';
+    const targets = [
+      makeTarget({
+        id: 'a',
+        name: 'Districtname',
+        labelAnchor: 'n',
+        labelPoint: { x: 100, y: 310 },
+      }),
+    ];
+    const states = new Map<string, TargetState>([['a', 'solved']]);
+    const polygons = new Map([['a', dA]]);
+
+    const result = layoutLabels(targets, states, { polygons });
+    const placement = result.placements[0]!;
+    const center = {
+      x: placement.box.x + placement.box.width / 2,
+      y: placement.box.y + placement.box.height / 2,
+    };
+
+    // 'n', the hand-tuned default, would land above the district (y < 300) — the solver
+    // must reject it in favour of some other anchor that lands inside.
+    expect(placement.anchor).not.toBe('n');
+    expect(pointInPolygon(center, polygonFromPath(dA))).toBe(true);
+    expect(placement.leader).toBe(false);
+  });
+
+  it('falls back to the far ring with a leader line once the whole near ring is blocked', () => {
+    const dA = 'M0 300 L200 300 L200 500 L0 500 Z';
+    const point = { x: 100, y: 310 };
+    const { width, height } = estimateLabelSize('Districtname');
+    const nearBoxes = ANCHOR_ORDER.map((a) => boxForAnchor(point, a, width, height, NEAR_GAP));
+    const polygons = new Map([['a', polygonFromPath(dA)]]);
+    const mapBBox = { minX: 0, minY: 300, maxX: 200, maxY: 500 };
+
+    const result = placeSingleLabel(point, 'n', width, height, nearBoxes, {
+      ownId: 'a',
+      polygons,
+      mapBBox,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.leader).toBe(true);
+  });
+
+  it('never lands inside a different target polygon — prefers empty margin, even over the hand-tuned anchor', () => {
+    // A sliver district squeezed between open sea (west) and a large neighbour (east).
+    const dA = 'M90 300 L110 300 L110 320 L90 320 Z';
+    const dB = 'M110 200 L400 200 L400 500 L110 500 Z';
+    const targets = [
+      makeTarget({
+        id: 'a',
+        name: 'Districtname',
+        labelAnchor: 'e',
+        labelPoint: { x: 100, y: 310 },
+      }),
+    ];
+    const states = new Map<string, TargetState>([['a', 'solved']]);
+    const polygons = new Map([
+      ['a', dA],
+      ['b', dB],
+    ]);
+
+    const result = layoutLabels(targets, states, { polygons });
+    const placement = result.placements[0]!;
+    const center = {
+      x: placement.box.x + placement.box.width / 2,
+      y: placement.box.y + placement.box.height / 2,
+    };
+
+    // 'e' (the hand-tuned anchor) sits squarely inside B — must be rejected.
+    expect(placement.anchor).not.toBe('e');
+    expect(pointInPolygon(center, polygonFromPath(dB))).toBe(false);
+    expect(placement.leader).toBe(true); // not inside its own district either (there's no room) — needs the tether
+  });
+
+  it('suppresses rather than landing on a neighbour when nothing else is available', () => {
+    const dA = 'M95 300 L105 300 L105 310 L95 310 Z';
+    const dB = 'M0 0 L400 0 L400 600 L0 600 Z'; // covers the whole map around the sliver
+    const point = { x: 100, y: 305 };
+    const { width, height } = estimateLabelSize('Districtname');
+    const polygons = new Map([
+      ['a', polygonFromPath(dA)],
+      ['b', polygonFromPath(dB)],
+    ]);
+    const mapBBox = { minX: 0, minY: 0, maxX: 400, maxY: 600 };
+
+    const result = placeSingleLabel(point, 'n', width, height, [], {
+      ownId: 'a',
+      polygons,
+      mapBBox,
+    });
+
+    expect(result).toBeNull(); // suppressed, not misinformation
+  });
+
+  it('never places a label centre outside the overall map bounding box', () => {
+    // District at the map's very corner: nothing north or west of it to expand into.
+    const dA = 'M0 0 L40 0 L40 40 L0 40 Z';
+    const point = { x: 5, y: 5 };
+    const { width, height } = estimateLabelSize('Districtname');
+    const nearBoxes = ANCHOR_ORDER.map((a) => boxForAnchor(point, a, width, height, NEAR_GAP));
+    const polygons = new Map([['a', polygonFromPath(dA)]]);
+    const mapBBox = { minX: 0, minY: 0, maxX: 40, maxY: 40 };
+
+    // Near ring fully blocked, and FAR_GAP (40) from a corner point overshoots this tiny
+    // map's bounding box in every direction — every far candidate's centre falls outside it.
+    const result = placeSingleLabel(point, 'nw', width, height, nearBoxes, {
+      ownId: 'a',
+      polygons,
+      mapBBox,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('resolves the real 52-district give-up case: most labels in their own district, none on a neighbour', () => {
+    const polygons = southIndiaPolygons();
+    const parsed = new Map([...polygons].map(([id, d]) => [id, polygonFromPath(d)]));
+    const fontSize = fontSizeForViewBox(southIndiaPack.viewBox[3]);
+    const states = new Map<string, TargetState>(
+      southIndiaPack.targets.map((t) => [t.id, 'missed' as TargetState]),
+    );
+
+    const result = layoutLabels(southIndiaPack.targets, states, { fontSize, polygons });
+
+    let inOwn = 0;
+    let onOther = 0;
+    for (const p of result.placements) {
+      const center = { x: p.box.x + p.box.width / 2, y: p.box.y + p.box.height / 2 };
+      const own = parsed.get(p.targetId);
+      if (own && pointInPolygon(center, own)) {
+        inOwn++;
+        continue;
+      }
+      for (const [id, polygon] of parsed) {
+        if (id !== p.targetId && pointInPolygon(center, polygon)) onOther++;
+      }
+    }
+
+    expect(result.placements.length + result.suppressed.length).toBe(52);
+    expect(onOther).toBe(0); // the hard constraint this fix adds
+    expect(inOwn).toBeGreaterThan(35); // most labels sit in their own district, not just "not on a neighbour"
   });
 });
