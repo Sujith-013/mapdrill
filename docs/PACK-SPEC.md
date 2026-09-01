@@ -46,15 +46,15 @@ silently ignored.
 
 ### Pack (top level)
 
-| Field         | Type                     | Constraints                          | Example (south-india) |
-| ------------- | ------------------------ | ------------------------------------- | ---------------------- |
-| `id`          | `string`                 | `^[a-z0-9-]+$`                        | `"kerala-tamil-nadu"` |
-| `title`       | `string`                 | non-empty                             | `"South India"` |
-| `subtitle`    | `string`                 | —                                      | `"Kerala & Tamil Nadu districts"` |
-| `attribution` | `string`                 | non-empty                             | `"District boundaries: <source>, <license>. See SOURCE.md."` |
-| `viewBox`     | `[number, number, number, number]` | exactly 4 numbers, `[x, y, w, h]` | `[0, 0, 800, 1000]` |
-| `groups`      | `Group[]`                | min 1 item                            | see below |
-| `targets`     | `Target[]`               | min 1 item                            | see below |
+| Field         | Type                               | Constraints                       | Example (south-india)                                        |
+| ------------- | ---------------------------------- | --------------------------------- | ------------------------------------------------------------ |
+| `id`          | `string`                           | `^[a-z0-9-]+$`                    | `"kerala-tamil-nadu"`                                        |
+| `title`       | `string`                           | non-empty                         | `"South India"`                                              |
+| `subtitle`    | `string`                           | —                                 | `"Kerala & Tamil Nadu districts"`                            |
+| `attribution` | `string`                           | non-empty                         | `"District boundaries: <source>, <license>. See SOURCE.md."` |
+| `viewBox`     | `[number, number, number, number]` | exactly 4 numbers, `[x, y, w, h]` | `[0, 0, 800, 1000]`                                          |
+| `groups`      | `Group[]`                          | min 1 item                        | see below                                                    |
+| `targets`     | `Target[]`                         | min 1 item                        | see below                                                    |
 
 `viewBox` is passed straight through to the `<svg viewBox="...">` attribute
 of `geometry.svg` at render time — the two must describe the same coordinate
@@ -64,11 +64,11 @@ space (see "geometry.svg" below).
 
 One `Group` per fill-color grouping — typically one per state/province:
 
-| Field       | Type     | Constraints                                                                                            | Example |
-| ----------- | -------- | -------------------------------------------------------------------------------------------------------| ------- |
-| `id`        | `string` | `^[a-z0-9-]+$`, unique within the pack                                                                  | `"kerala"` |
-| `name`      | `string` | non-empty                                                                                                | `"Kerala"` |
-| `fillToken` | `string` | non-empty; a CSS custom property name **without** the `--` prefix, must exist in `src/styles/tokens.css`| `"region-primary"` |
+| Field       | Type     | Constraints                                                                                              | Example            |
+| ----------- | -------- | -------------------------------------------------------------------------------------------------------- | ------------------ |
+| `id`        | `string` | `^[a-z0-9-]+$`, unique within the pack                                                                   | `"kerala"`         |
+| `name`      | `string` | non-empty                                                                                                | `"Kerala"`         |
+| `fillToken` | `string` | non-empty; a CSS custom property name **without** the `--` prefix, must exist in `src/styles/tokens.css` | `"region-primary"` |
 
 Example, both groups of the south-india pack:
 
@@ -91,16 +91,16 @@ token fails silently at render time (the browser drops an unresolvable
 
 One `Target` per nameable, clickable subdivision:
 
-| Field         | Type                          | Constraints                                                    | Example |
-| ------------- | ------------------------------ | ---------------------------------------------------------------| ------- |
-| `id`          | `string`                       | `^[a-z0-9-]+$`, unique within the pack                          | `"thiruvananthapuram"` |
-| `name`        | `string`                       | non-empty; the canonical/display answer                         | `"Thiruvananthapuram"` |
-| `aliases`     | `string[]`                     | each item non-empty; may be `[]`                                 | `["trivandrum"]` |
-| `groupId`     | `string`                       | must equal some `Group.id` in the same pack                     | `"kerala"` |
-| `pathId`      | `string`                       | non-empty; must equal some `<path id="...">` in `geometry.svg`  | `"thiruvananthapuram"` |
-| `labelPoint`  | `{ "x": number, "y": number }` | coordinates in `viewBox` space                                   | `{ "x": 421, "y": 812 }` |
-| `labelAnchor` | `string` enum                  | one of `n ne e se s sw w nw`                                     | `"n"` |
-| `tier`        | `integer` enum                 | one of `1 2 3`                                                   | `1` |
+| Field         | Type                           | Constraints                                                    | Example                  |
+| ------------- | ------------------------------ | -------------------------------------------------------------- | ------------------------ |
+| `id`          | `string`                       | `^[a-z0-9-]+$`, unique within the pack                         | `"thiruvananthapuram"`   |
+| `name`        | `string`                       | non-empty; the canonical/display answer                        | `"Thiruvananthapuram"`   |
+| `aliases`     | `string[]`                     | each item non-empty; may be `[]`                               | `["trivandrum"]`         |
+| `groupId`     | `string`                       | must equal some `Group.id` in the same pack                    | `"kerala"`               |
+| `pathId`      | `string`                       | non-empty; must equal some `<path id="...">` in `geometry.svg` | `"thiruvananthapuram"`   |
+| `labelPoint`  | `{ "x": number, "y": number }` | coordinates in `viewBox` space                                 | `{ "x": 421, "y": 812 }` |
+| `labelAnchor` | `string` enum                  | one of `n ne e se s sw w nw`                                   | `"n"`                    |
+| `tier`        | `integer` enum                 | one of `1 2 3`                                                 | `1`                      |
 
 Full example, one target:
 
@@ -254,8 +254,8 @@ FAIL  packs/kerala-tamil-nadu
      `pathId` (each `labelPoint` defaulted to that feature's path centroid,
      per "Label placement" below), leaving `groups`/`fillToken`, `aliases`,
      `labelAnchor` tuning, and `tier` for hand-completion.
-   Until it exists, both files have to be built by hand or with ad hoc
-   scripting against this same contract.
+     Until it exists, both files have to be built by hand or with ad hoc
+     scripting against this same contract.
 4. **Hand-complete `pack.json`.** Assign `groups` (decide the
    state/province split and each one's `fillToken`, adding new tokens to
    `tokens.css` first if not reusing the existing pair). Fill in `aliases`

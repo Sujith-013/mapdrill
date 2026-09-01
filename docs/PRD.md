@@ -113,13 +113,13 @@ player-initiated.
 
 ## Visual states
 
-| `TargetState` | Token              |
-| -------------- | ------------------ |
-| `unsolved`      | region base fill (see below) |
-| armed (Mode B)  | `--state-armed`     |
-| `solved`        | `--state-solved`    |
-| `solvedRetry`   | `--state-solved-retry` |
-| `missed`        | `--state-missed`    |
+| `TargetState`  | Token                        |
+| -------------- | ---------------------------- |
+| `unsolved`     | region base fill (see below) |
+| armed (Mode B) | `--state-armed`              |
+| `solved`       | `--state-solved`             |
+| `solvedRetry`  | `--state-solved-retry`       |
+| `missed`       | `--state-missed`             |
 
 Resolved rule (from `docs/DESIGN-SYSTEM.md`): `unsolved` regions render at
 full reference-art saturation (`--region-primary` / `--region-secondary`) on
