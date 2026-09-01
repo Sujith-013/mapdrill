@@ -7,6 +7,7 @@ import {
   createLabelLayer,
   estimateLabelSize,
   FAR_GAP,
+  fontSizeForViewBox,
   layoutLabels,
   NEAR_GAP,
   placeSingleLabel,
@@ -135,6 +136,23 @@ describe('layoutLabels', () => {
 
     console.log(`layoutLabels: 52 targets solved in ${elapsedMs.toFixed(2)}ms`);
     expect(elapsedMs).toBeLessThan(200);
+  });
+
+  // Regression guard for the actual rendering size (mapSurface derives this
+  // from the pack's own viewBox height, not the module's small pure-test
+  // default) — locks in that the give-up worst case still resolves cleanly
+  // at the size players actually see.
+  it('suppresses nothing on give-up at the real render font-size', () => {
+    const fontSize = fontSizeForViewBox(southIndiaPack.viewBox[3]);
+    const states = new Map<string, TargetState>(
+      southIndiaPack.targets.map((t) => [t.id, 'missed' as TargetState]),
+    );
+
+    const result = layoutLabels(southIndiaPack.targets, states, { fontSize });
+
+    expect(result.suppressed).toEqual([]);
+    expect(result.placements.length).toBe(52);
+    expect(noPairOverlaps(result.placements.map((p) => p.box))).toBe(true);
   });
 });
 

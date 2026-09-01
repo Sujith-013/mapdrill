@@ -18,10 +18,11 @@
   --region-secondary: #3f3333; /* Tamil Nadu: maroon-brown */
 
   /* region base fills during active play — desaturated toward --plate-bg
-     (60% mix) so answer-state color carries all signal. See
-     docs/DESIGN-SYSTEM.md "RESOLVED" section. */
-  --region-primary-muted: #1e2c36;
-  --region-secondary-muted: #2b2827;
+     (30% mix) so answer-state color carries more signal, while the
+     Kerala/Tamil Nadu split stays legible instead of collapsing to
+     near-black (a 60% mix did that — see docs/DESIGN-SYSTEM.md "RESOLVED"). */
+  --region-primary-muted: #1d3548;
+  --region-secondary-muted: #352d2d;
 
   /* hairline borders between subdivisions */
   --hairline-color: rgba(255, 255, 255, 0.25);

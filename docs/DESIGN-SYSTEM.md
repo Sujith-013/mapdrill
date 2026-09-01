@@ -86,11 +86,19 @@ and the two compete for the same channel. Resolution:
   moments the player reads the map as a picture, so it should look like the
   poster.
 - **During active play**, base region fills use the desaturated variants
-  (`--region-primary-muted` / `--region-secondary-muted` — a 60% mix toward
-  `--plate-bg`), so answer-state color carries all signal unambiguously.
-  This also makes the give-up reveal (`--state-missed` filled across every
-  unsolved target) read instantly instead of competing with two
-  mid-saturation base fills.
+  (`--region-primary-muted` / `--region-secondary-muted` — a 30% mix toward
+  `--plate-bg`), so answer-state color reads clearly against them without
+  the regions themselves disappearing. This also makes the give-up reveal
+  (`--state-missed` filled across every unsolved target) read instantly
+  instead of competing with two mid-saturation base fills.
+
+  A first pass mixed 60% toward `--plate-bg`, which over-corrected: both
+  regions collapsed to near-black and the Kerala/Tamil Nadu split (the
+  thing the "start/results = full saturation" rule exists to let the
+  player read as a picture) became unreadable even during play, where
+  it's still meant to be visible, just de-emphasised. 30% keeps both
+  regions clearly identifiable as two different fills while still sitting
+  well below the answer-state colors in visual weight.
 
 `ui/map-view.ts` should pick the fill-token pair (full vs muted) based on
 whether a session is idle/complete or running/surrendered.

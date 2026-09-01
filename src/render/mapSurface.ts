@@ -13,7 +13,7 @@
  * suppressed-list return is threaded back out of applyState.
  */
 import type { Pack, Session, Target, TargetState } from '../engine/types';
-import { createLabelLayer } from './labels';
+import { createLabelLayer, fontSizeForViewBox } from './labels';
 import { regionFillToken, type Phase, type VisualState } from './theme';
 
 export interface MapSurface {
@@ -84,6 +84,7 @@ export function createMapSurface(
   }
 
   const labelLayer = createLabelLayer();
+  const labelFontSize = fontSizeForViewBox(pack.viewBox[3]);
   svg.appendChild(labelLayer.el);
 
   container.replaceChildren(svg);
@@ -113,7 +114,9 @@ export function createMapSurface(
     }
 
     const targetStates = lastSession?.targetStates ?? new Map<Target['id'], TargetState>();
-    lastSuppressed = labelLayer.applyLayout(pack.targets, targetStates).suppressed;
+    lastSuppressed = labelLayer.applyLayout(pack.targets, targetStates, {
+      fontSize: labelFontSize,
+    }).suppressed;
   }
 
   function onClick(event: Event): void {

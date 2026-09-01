@@ -7,7 +7,11 @@
     <link rel="stylesheet" href="/src/styles/tokens.css" />
     <link rel="stylesheet" href="/src/styles/app.css" />
     <style>
-      /* Harness chrome only — not shipped, so not in app.css. */
+      /* Harness chrome only — not shipped, so not in app.css. Dev tool:
+         readability beats compactness, so scenes render large and
+         full-width, stacked — not the narrow single-column phone-sized
+         frame this used to be, which made label collisions in a dense
+         scene impossible to judge by eye. */
       body {
         background: #000;
         color: #fff;
@@ -16,17 +20,21 @@
         padding: 24px;
       }
       .scene {
-        margin-bottom: 32px;
+        margin-bottom: 48px;
       }
       .scene h2 {
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 600;
-        margin: 0 0 8px;
+        margin: 0 0 12px;
       }
       .scene-frame {
-        /* Matches docs/reference/south-india-labelled.png's pixel size, for a direct visual comparison. */
-        width: 590px;
-        height: 1280px;
+        /* South-india pack's viewBox is 800x815 (see pack.json) — matching
+           that aspect ratio here means the map fills the frame edge to
+           edge instead of letterboxing. Floors at 900px per the "at least
+           900px wide" ask, caps at 1400px so it doesn't run edge-to-edge
+           on an ultrawide monitor. */
+        width: clamp(900px, 90vw, 1400px);
+        aspect-ratio: 800 / 815;
       }
     </style>
   </head>

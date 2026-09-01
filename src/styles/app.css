@@ -11,6 +11,11 @@
   width: 100%;
   height: 100%;
   background: var(--plate-bg);
+  /* A tight viewBox plus a leader-line placement or a wide label near an
+     edge district can legitimately extend a hair past the viewBox rect —
+     the default SVG UA stylesheet clips that at the viewport edge. Letting
+     it show is better than a clipped word. */
+  overflow: visible;
 }
 
 .map-surface path {
@@ -50,10 +55,27 @@
 }
 
 /* Answer-state fills. Armed is a ring/stroke emphasis only — never a fill
-   change — so armed and solved never look alike. */
+   change — so armed and solved never look alike. A thin static outline
+   read as a rendering artefact rather than a selection, so armed also
+   gets a thicker stroke plus a pulsing glow — unmistakable at a glance,
+   and the animation alone keeps it from ever being mistaken for the
+   static outline hover already puts on unarmed targets in Mode B. */
 .map-surface path.armed {
   stroke: var(--state-armed);
-  stroke-width: 2px;
+  stroke-width: 3px;
+  animation: armed-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes armed-pulse {
+  0%,
+  100% {
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 2px var(--state-armed));
+  }
+  50% {
+    stroke-width: 4.5px;
+    filter: drop-shadow(0 0 6px var(--state-armed));
+  }
 }
 
 .map-surface path.solved {
@@ -74,11 +96,24 @@
 }
 
 .label-layer .label-text {
+  /* font-size is NOT set here: it's an SVG attribute set once per layout on
+     the label-layer <g> (see labels.ts createLabelLayer), scaled off the
+     pack's own viewBox height so it stays legible at any pack's coordinate
+     scale — a stylesheet rule here would win the cascade over that
+     attribute and silently override it back to a fixed size. */
   fill: var(--label-color);
   font-family: var(--label-font);
-  font-size: var(--label-font-size);
   text-anchor: middle;
   dominant-baseline: middle;
+  /* Halo: a dark stroke painted under the fill so the label reads over
+     every base/answer-state fill it can land on (muted region, solved
+     green, retry amber, missed red) without needing per-background
+     contrast tuning. paint-order flips the normal fill-then-stroke order;
+     0.3em is roughly 3-4x a hairline stroke at this font-size. */
+  paint-order: stroke;
+  stroke: var(--plate-bg);
+  stroke-width: 0.3em;
+  stroke-linejoin: round;
 }
 
 .label-layer .label-leader {

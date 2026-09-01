@@ -46,17 +46,39 @@ function isLabelworthy(state: TargetState | undefined): boolean {
 }
 
 // Rendering decision: font-size (and every box/gap dimension below) is a
-// fixed number of *viewBox units*, not screen pixels. mapSurface mounts the
-// map's <svg> with no fixed pixel width/height and scales it purely via CSS
+// number of *viewBox units*, not screen pixels. mapSurface mounts the map's
+// <svg> with no fixed pixel width/height and scales it purely via CSS
 // against its container — so everything drawn inside it, text included,
 // already scales as one unit with the container. Locking font-size to
 // screen pixels instead (the usual non-scaling-stroke trick, right for
 // hairline borders) would hold letterforms constant while the districts
 // around them grow or shrink with the window: the wrong failure mode here,
 // since a size tuned for a phone-width map would swamp a small district
-// blown up to desktop width. A fixed value in user-space units keeps every
-// label legible *relative to the map it's drawn on*, at any container size.
-export const FONT_SIZE = 12; // same number as --label-font-size, reinterpreted as user units
+// blown up to desktop width. A value in user-space units keeps every label
+// legible *relative to the map it's drawn on*, at any container size.
+//
+// FONT_SIZE below is only the fallback used when a caller doesn't pass an
+// explicit size (e.g. these module's own solver tests). Real rendering
+// (mapSurface) instead derives the size from the *pack's own viewBox
+// height* via fontSizeForViewBox: a size tuned by eye against one pack's
+// coordinate space (this one spans 1000 units tall) would be comically
+// tiny or huge against a pack whose viewBox is a different scale — sizing
+// off a fraction of the viewBox is what makes the number mean anything
+// across packs. A fixed 12 (1.2% of the original 1000-tall viewBox) was
+// the "far too small" size flagged in review; 1.9% is comfortably larger
+// and readable at the reference art's proportions, tuned empirically
+// against the real south-india pack as the largest size that still
+// resolves all 52 targets on give-up without the solver suppressing any
+// of them to dense clusters (0.020 already suppresses one, Kottayam).
+export const FONT_SIZE = 12;
+
+/** Fraction of the pack's viewBox height a label's font-size renders at. See FONT_SIZE above. */
+export const FONT_SIZE_VIEWBOX_RATIO = 0.019;
+
+/** Derives the render font-size for a pack from its viewBox height (FONT_SIZE_VIEWBOX_RATIO). */
+export function fontSizeForViewBox(viewBoxHeight: number): number {
+  return viewBoxHeight * FONT_SIZE_VIEWBOX_RATIO;
+}
 
 const CHAR_WIDTH_FACTOR = 0.6; // average glyph advance for the sans-serif label font, as a fraction of font-size
 const LINE_HEIGHT_FACTOR = 1.3;
@@ -228,9 +250,14 @@ export interface LabelLayer {
 
 /**
  * DOM wrapper around layoutLabels: one <text> per placement, plus a <line>
- * leader for every placement with `leader: true`. Colour/font come from
- * CSS classes (.label-text/.label-leader in app.css), not attributes set
- * here — same "class, not JS-set fill" rule as mapSurface.ts.
+ * leader for every placement with `leader: true`. Colour comes from CSS
+ * classes (.label-text/.label-leader in app.css), not attributes set here
+ * — same "class, not JS-set fill" rule as mapSurface.ts. font-size is the
+ * one exception: it's set here, once per layout, as an SVG attribute on
+ * the layer's <g> (every <text> inherits it) rather than a CSS token,
+ * because it must track the *solver's* fontSize for this call — the same
+ * number estimateLabelSize used to size the boxes — not a fixed value a
+ * stylesheet can't know per pack.
  */
 export function createLabelLayer(): LabelLayer {
   const g = document.createElementNS(SVG_NS, 'g');
@@ -242,6 +269,7 @@ export function createLabelLayer(): LabelLayer {
     options?: LabelLayoutOptions,
   ): LabelLayoutResult {
     const result = layoutLabels(targets, targetStates, options);
+    g.setAttribute('font-size', String(options?.fontSize ?? FONT_SIZE));
     g.replaceChildren();
 
     const byId = new Map(targets.map((t) => [t.id, t]));
