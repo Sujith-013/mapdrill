@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mapdrill/packs/schema/pack.schema.json",
+  "title": "mapdrill map pack",
+  "description": "Schema for packs/<pack-id>/pack.json. Mirrors src/engine/types.ts Pack.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "subtitle", "attribution", "viewBox", "groups", "targets"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "subtitle": { "type": "string" },
+    "attribution": { "type": "string", "minLength": 1 },
+    "viewBox": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "groups": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/group" },
+      "minItems": 1
+    },
+    "targets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/target" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "fillToken"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "name": { "type": "string", "minLength": 1 },
+        "fillToken": { "type": "string", "minLength": 1 }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "aliases",
+        "groupId",
+        "pathId",
+        "labelPoint",
+        "labelAnchor",
+        "tier"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "name": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "groupId": { "type": "string" },
+        "pathId": { "type": "string", "minLength": 1 },
+        "labelPoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "labelAnchor": {
+          "type": "string",
+          "enum": ["n", "ne", "e", "se", "s", "sw", "w", "nw"]
+        },
+        "tier": { "type": "integer", "enum": [1, 2, 3] }
+      }
+    }
+  }
+}

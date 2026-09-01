@@ -1,0 +1,53 @@
+/**
+ * Design tokens, sampled from docs/reference/*.png (see docs/DESIGN-SYSTEM.md
+ * for sampling method and the base-fill vs answer-state resolution).
+ * Near-black plate, two-tone region fills by state, yellow labels/compass,
+ * white+yellow title block, thin light hairline borders.
+ *
+ * fillToken values referenced from packs (e.g. Group.fillToken = "region-primary")
+ * must name a token defined here without its "--" prefix.
+ */
+:root {
+  /* plate */
+  --plate-bg: #1e201f;
+  --plate-bg-alt: #262827;
+
+  /* region base fills — one per group, two-tone in the reference pack.
+     Full saturation: used on the start screen and results screen only. */
+  --region-primary: #1d3e59; /* Kerala: teal-blue */
+  --region-secondary: #3f3333; /* Tamil Nadu: maroon-brown */
+
+  /* region base fills during active play — desaturated toward --plate-bg
+     (60% mix) so answer-state color carries all signal. See
+     docs/DESIGN-SYSTEM.md "RESOLVED" section. */
+  --region-primary-muted: #1e2c36;
+  --region-secondary-muted: #2b2827;
+
+  /* hairline borders between subdivisions */
+  --hairline-color: rgba(255, 255, 255, 0.25);
+  --hairline-width: 0.75px;
+
+  /* labels */
+  --label-color: #c5cb51;
+  --label-color-muted: rgba(197, 203, 81, 0.6);
+  --label-font: system-ui, 'Segoe UI', sans-serif;
+  --label-font-size: 12px;
+
+  /* title block, top-left */
+  --title-primary: #ffffff;
+  --title-accent: var(--label-color);
+
+  /* compass rose, bottom-right */
+  --compass-color: var(--label-color);
+
+  /* answer-state fills/strokes — read against the muted region fills above
+     during play (see docs/DESIGN-SYSTEM.md, RESOLVED). */
+  --state-armed: #4d9de0;
+  --state-solved: #3bb54a;
+  --state-solved-retry: #e0a72e;
+  --state-missed: #d24343;
+
+  /* misc */
+  --radius-sm: 4px;
+  --font-ui: system-ui, sans-serif;
+}

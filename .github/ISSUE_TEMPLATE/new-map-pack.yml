@@ -1,0 +1,33 @@
+name: New map pack proposal
+description: Propose a new region for mapdrill
+labels: [map-pack]
+body:
+  - type: input
+    id: region
+    attributes:
+      label: Region name
+      description: e.g. "States of Germany", "Provinces of the Philippines"
+    validations:
+      required: true
+  - type: input
+    id: subdivision-count
+    attributes:
+      label: Number of subdivisions
+    validations:
+      required: true
+  - type: textarea
+    id: geometry-source
+    attributes:
+      label: Geometry source and license
+      description: >
+        Where does the boundary data come from, and under what license?
+        See packs/LICENSE-DATA.md — pack geometry must be separately
+        licensed and attributed in the pack's SOURCE.md.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else reviewers should know?
+    validations:
+      required: false

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+.env
+.env.local
+
+# keep reference art even if an image-ignore rule is ever added above
+!docs/reference/*.png

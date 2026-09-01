@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in mapdrill is broken
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+  - type: input
+    id: pack
+    attributes:
+      label: Map pack
+      description: Which pack were you playing (e.g. kerala-tamil-nadu)?
+    validations:
+      required: false
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Free Recall
+        - Pin & Name
+        - Not mode-specific
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / OS
+    validations:
+      required: false
