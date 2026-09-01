@@ -1,5 +1,69 @@
 /**
  * App-level layout and component styles.
- * TODO: layout for map view, input box, timer, results panel.
+ * TODO: layout for input box, timer, results panel.
  * Consumes tokens from tokens.css — no hardcoded colors here.
  */
+
+/* Map surface (src/render/mapSurface.ts) --------------------------------- */
+
+.map-surface {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--plate-bg);
+}
+
+.map-surface path {
+  stroke: var(--hairline-color);
+  stroke-width: var(--hairline-width);
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Mode B only: unarmed, unsolved targets are the only clickable/hoverable paths. */
+.map-surface.interactive path.unsolved {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.map-surface.interactive path.unsolved:hover {
+  stroke: var(--state-armed);
+}
+
+/* Group base fills — full saturation (start/results) vs muted (play). One of
+   these is present on a path only while it's unsolved/armed; solved/retry/
+   missed replace it with their own state fill below. */
+.map-surface path.region-primary {
+  fill: var(--region-primary);
+}
+
+.map-surface path.region-secondary {
+  fill: var(--region-secondary);
+}
+
+.map-surface path.region-primary-muted {
+  fill: var(--region-primary-muted);
+}
+
+.map-surface path.region-secondary-muted {
+  fill: var(--region-secondary-muted);
+}
+
+/* Answer-state fills. Armed is a ring/stroke emphasis only — never a fill
+   change — so armed and solved never look alike. */
+.map-surface path.armed {
+  stroke: var(--state-armed);
+  stroke-width: 2px;
+}
+
+.map-surface path.solved {
+  fill: var(--state-solved);
+}
+
+.map-surface path.solvedRetry {
+  fill: var(--state-solved-retry);
+}
+
+.map-surface path.missed {
+  fill: var(--state-missed);
+}
