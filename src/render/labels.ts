@@ -1,0 +1,206 @@
+/**
+ * Label placement solver: positions one label per visible target at
+ * target.labelPoint, resolving collisions by greedy first-fit across the 8
+ * compass anchors, honouring each target's hand-tuned labelAnchor as the
+ * first candidate. Pure geometry — no DOM, no correctness decisions about
+ * the session. Mounting the result as SVG <text>/<line> elements is a later
+ * integration step; this module produces the layout that step draws.
+ */
+import type { LabelAnchor, Target, TargetState } from '../engine/types';
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface LabelBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface LabelPlacement {
+  targetId: Target['id'];
+  anchor: LabelAnchor;
+  box: LabelBox;
+  /** true once placement fell back to the far ring — the renderer should draw a leader line back to target.labelPoint. */
+  leader: boolean;
+}
+
+export interface LabelLayoutResult {
+  placements: LabelPlacement[];
+  /** ids of targets whose label collided at every anchor, both rings — surface these on hover instead. */
+  suppressed: Array<Target['id']>;
+}
+
+export interface LabelLayoutOptions {
+  fontSize?: number;
+}
+
+/** States a label is ever shown for. Never 'unsolved' — that's the whole point of Mode B's reveal-on-solve. */
+function isLabelworthy(state: TargetState | undefined): boolean {
+  return state === 'solved' || state === 'solvedRetry' || state === 'missed';
+}
+
+// Rendering decision: font-size (and every box/gap dimension below) is a
+// fixed number of *viewBox units*, not screen pixels. mapSurface mounts the
+// map's <svg> with no fixed pixel width/height and scales it purely via CSS
+// against its container — so everything drawn inside it, text included,
+// already scales as one unit with the container. Locking font-size to
+// screen pixels instead (the usual non-scaling-stroke trick, right for
+// hairline borders) would hold letterforms constant while the districts
+// around them grow or shrink with the window: the wrong failure mode here,
+// since a size tuned for a phone-width map would swamp a small district
+// blown up to desktop width. A fixed value in user-space units keeps every
+// label legible *relative to the map it's drawn on*, at any container size.
+export const FONT_SIZE = 12; // same number as --label-font-size, reinterpreted as user units
+
+const CHAR_WIDTH_FACTOR = 0.6; // average glyph advance for the sans-serif label font, as a fraction of font-size
+const LINE_HEIGHT_FACTOR = 1.3;
+const PAD_X = 3;
+const PAD_Y = 2;
+
+/**
+ * Estimated box for a label's text, computed analytically rather than by
+ * DOM measurement (no getBBox/measureText call) — keeps this module DOM-free
+ * and its solve time independent of layout/reflow cost.
+ */
+export function estimateLabelSize(
+  name: string,
+  fontSize: number = FONT_SIZE,
+): { width: number; height: number } {
+  return {
+    width: name.length * fontSize * CHAR_WIDTH_FACTOR + PAD_X * 2,
+    height: fontSize * LINE_HEIGHT_FACTOR + PAD_Y * 2,
+  };
+}
+
+/** Canonical trial order. A target's own labelAnchor is prepended ahead of this, never dropped from it. */
+export const ANCHOR_ORDER: readonly LabelAnchor[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+
+/** Distance in viewBox units from labelPoint to the box's near edge, first round. */
+export const NEAR_GAP = 4;
+/** "Further out" fallback distance once all 8 near-gap anchors collide — placements at this gap get a leader line. */
+export const FAR_GAP = 40;
+
+/** Computes a label's box for one compass anchor, `gap` units out from `point`. */
+export function boxForAnchor(
+  point: Point,
+  anchor: LabelAnchor,
+  width: number,
+  height: number,
+  gap: number,
+): LabelBox {
+  const top = point.y - gap - height;
+  const bottom = point.y + gap;
+  const left = point.x - gap - width;
+  const right = point.x + gap;
+  const midX = point.x - width / 2;
+  const midY = point.y - height / 2;
+  switch (anchor) {
+    case 'n':
+      return { x: midX, y: top, width, height };
+    case 's':
+      return { x: midX, y: bottom, width, height };
+    case 'e':
+      return { x: right, y: midY, width, height };
+    case 'w':
+      return { x: left, y: midY, width, height };
+    case 'ne':
+      return { x: right, y: top, width, height };
+    case 'nw':
+      return { x: left, y: top, width, height };
+    case 'se':
+      return { x: right, y: bottom, width, height };
+    case 'sw':
+      return { x: left, y: bottom, width, height };
+  }
+}
+
+function overlaps(a: LabelBox, b: LabelBox): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** First anchor (in `order`) whose box collides with none of `placed`. Early-exits per anchor and per box checked. */
+function fitsAnywhere(
+  point: Point,
+  order: readonly LabelAnchor[],
+  width: number,
+  height: number,
+  gap: number,
+  placed: readonly LabelBox[],
+): { anchor: LabelAnchor; box: LabelBox } | null {
+  for (const anchor of order) {
+    const box = boxForAnchor(point, anchor, width, height, gap);
+    if (placed.every((p) => !overlaps(p, box))) return { anchor, box };
+  }
+  return null;
+}
+
+/**
+ * Places a single label against already-placed boxes: `labelAnchor` first
+ * (the hand-tuned override always gets the first try, never overridden by
+ * the solver), then the remaining 7 anchors in canonical order, at
+ * NEAR_GAP. If all 8 collide, the same 8 again at FAR_GAP (leader line). If
+ * that also fails, null — the caller should suppress this label.
+ */
+export function placeSingleLabel(
+  point: Point,
+  labelAnchor: LabelAnchor,
+  width: number,
+  height: number,
+  placed: readonly LabelBox[],
+): { anchor: LabelAnchor; box: LabelBox; leader: boolean } | null {
+  const order = [labelAnchor, ...ANCHOR_ORDER.filter((a) => a !== labelAnchor)];
+
+  const near = fitsAnywhere(point, order, width, height, NEAR_GAP, placed);
+  if (near) return { ...near, leader: false };
+
+  const far = fitsAnywhere(point, order, width, height, FAR_GAP, placed);
+  if (far) return { ...far, leader: true };
+
+  return null;
+}
+
+/**
+ * Lays out labels for every solved/solvedRetry/missed target, resolving
+ * collisions in tier order (tier 1 first) so important districts claim
+ * their preferred anchor before lower-tier neighbours compete for it.
+ *
+ * O(n * anchors * placed): each of the n visible targets tries a constant
+ * 16 candidate boxes (8 anchors x 2 gap rounds), each checked against the
+ * boxes placed so far with an early-exit scan (`Array.every` stops at the
+ * first collision, `fitsAnywhere` stops at the first anchor that fits).
+ */
+export function layoutLabels(
+  targets: readonly Target[],
+  targetStates: ReadonlyMap<Target['id'], TargetState>,
+  options: LabelLayoutOptions = {},
+): LabelLayoutResult {
+  const fontSize = options.fontSize ?? FONT_SIZE;
+  const visible = targets.filter((t) => isLabelworthy(targetStates.get(t.id))).slice();
+  visible.sort((a, b) => a.tier - b.tier);
+
+  const placed: LabelBox[] = [];
+  const placements: LabelPlacement[] = [];
+  const suppressed: Array<Target['id']> = [];
+
+  for (const target of visible) {
+    const { width, height } = estimateLabelSize(target.name, fontSize);
+    const result = placeSingleLabel(target.labelPoint, target.labelAnchor, width, height, placed);
+    if (result) {
+      placements.push({
+        targetId: target.id,
+        anchor: result.anchor,
+        box: result.box,
+        leader: result.leader,
+      });
+      placed.push(result.box);
+    } else {
+      suppressed.push(target.id);
+    }
+  }
+
+  return { placements, suppressed };
+}
