@@ -1,3 +1,4 @@
 dist/
 node_modules/
 packs/**/pack.json
+packs/**/source/**

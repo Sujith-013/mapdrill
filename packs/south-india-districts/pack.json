@@ -1,0 +1,770 @@
+{
+  "id": "south-india-districts",
+  "title": "South India",
+  "subtitle": "Kerala & Tamil Nadu districts",
+  "attribution": "District boundaries contain information from geoBoundaries (Runfola, D. et al. 2020, PLoS ONE 15(4): e0231866; www.geoboundaries.org), sourced from Pathways Data Pvt. Ltd. / lgdirectory.gov.in, made available under the Open Database License (ODbL) v1.0.",
+  "viewBox": [
+    0,
+    0,
+    800,
+    1000
+  ],
+  "groups": [
+    {
+      "id": "kerala",
+      "name": "Kerala",
+      "fillToken": "region-primary"
+    },
+    {
+      "id": "tamil-nadu",
+      "name": "Tamil Nadu",
+      "fillToken": "region-secondary"
+    }
+  ],
+  "targets": [
+    {
+      "id": "alappuzha",
+      "name": "Alappuzha",
+      "aliases": [
+        "Alleppey"
+      ],
+      "groupId": "kerala",
+      "pathId": "alappuzha",
+      "labelPoint": {
+        "x": 250.57,
+        "y": 723.85
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "ernakulam",
+      "name": "Ernakulam",
+      "aliases": [
+        "Kochi",
+        "Cochin"
+      ],
+      "groupId": "kerala",
+      "pathId": "ernakulam",
+      "labelPoint": {
+        "x": 244.32,
+        "y": 606.43
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "idukki",
+      "name": "Idukki",
+      "aliases": [],
+      "groupId": "kerala",
+      "pathId": "idukki",
+      "labelPoint": {
+        "x": 316.6,
+        "y": 630.48
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "kannur",
+      "name": "Kannur",
+      "aliases": [
+        "Cannanore"
+      ],
+      "groupId": "kerala",
+      "pathId": "kannur",
+      "labelPoint": {
+        "x": 115.8,
+        "y": 341.23
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "kasaragod",
+      "name": "Kasaragod",
+      "aliases": [
+        "Kasargod"
+      ],
+      "groupId": "kerala",
+      "pathId": "kasaragod",
+      "labelPoint": {
+        "x": 65.99,
+        "y": 277.99
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "kollam",
+      "name": "Kollam",
+      "aliases": [
+        "Quilon"
+      ],
+      "groupId": "kerala",
+      "pathId": "kollam",
+      "labelPoint": {
+        "x": 307.14,
+        "y": 762.14
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "kottayam",
+      "name": "Kottayam",
+      "aliases": [],
+      "groupId": "kerala",
+      "pathId": "kottayam",
+      "labelPoint": {
+        "x": 267.55,
+        "y": 664.46
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "kozhikode",
+      "name": "Kozhikode",
+      "aliases": [
+        "Calicut"
+      ],
+      "groupId": "kerala",
+      "pathId": "kozhikode",
+      "labelPoint": {
+        "x": 160.85,
+        "y": 416.86
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "malappuram",
+      "name": "Malappuram",
+      "aliases": [],
+      "groupId": "kerala",
+      "pathId": "malappuram",
+      "labelPoint": {
+        "x": 185.85,
+        "y": 464.31
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "palakkad",
+      "name": "Palakkad",
+      "aliases": [
+        "Palghat"
+      ],
+      "groupId": "kerala",
+      "pathId": "palakkad",
+      "labelPoint": {
+        "x": 264.57,
+        "y": 528.95
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "pathanamthitta",
+      "name": "Pathanamthitta",
+      "aliases": [],
+      "groupId": "kerala",
+      "pathId": "pathanamthitta",
+      "labelPoint": {
+        "x": 292.47,
+        "y": 715.7
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "thiruvananthapuram",
+      "name": "Thiruvananthapuram",
+      "aliases": [
+        "Trivandrum"
+      ],
+      "groupId": "kerala",
+      "pathId": "thiruvananthapuram",
+      "labelPoint": {
+        "x": 322,
+        "y": 814.98
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "thrissur",
+      "name": "Thrissur",
+      "aliases": [
+        "Trichur"
+      ],
+      "groupId": "kerala",
+      "pathId": "thrissur",
+      "labelPoint": {
+        "x": 213.24,
+        "y": 548.86
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "wayanad",
+      "name": "Wayanad",
+      "aliases": [
+        "Wynad"
+      ],
+      "groupId": "kerala",
+      "pathId": "wayanad",
+      "labelPoint": {
+        "x": 191.04,
+        "y": 377.13
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "ariyalur",
+      "name": "Ariyalur",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "ariyalur",
+      "labelPoint": {
+        "x": 633.45,
+        "y": 444.87
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "chengalpattu",
+      "name": "Chengalpattu",
+      "aliases": [
+        "Chengalputtu",
+        "Chingleput"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "chengalpattu",
+      "labelPoint": {
+        "x": 702.99,
+        "y": 212.39
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "chennai",
+      "name": "Chennai",
+      "aliases": [
+        "Madras"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "chennai",
+      "labelPoint": {
+        "x": 766.1,
+        "y": 182.06
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "coimbatore",
+      "name": "Coimbatore",
+      "aliases": [
+        "Kovai"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "coimbatore",
+      "labelPoint": {
+        "x": 313.53,
+        "y": 458.17
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "cuddalore",
+      "name": "Cuddalore",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "cuddalore",
+      "labelPoint": {
+        "x": 672.13,
+        "y": 402.85
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "dharmapuri",
+      "name": "Dharmapuri",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "dharmapuri",
+      "labelPoint": {
+        "x": 462.31,
+        "y": 310.13
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "dindigul",
+      "name": "Dindigul",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "dindigul",
+      "labelPoint": {
+        "x": 438.67,
+        "y": 561.52
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "erode",
+      "name": "Erode",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "erode",
+      "labelPoint": {
+        "x": 382.41,
+        "y": 398.72
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "kallakurichi",
+      "name": "Kallakurichi",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "kallakurichi",
+      "labelPoint": {
+        "x": 590.09,
+        "y": 359.89
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "kanchipuram",
+      "name": "Kanchipuram",
+      "aliases": [
+        "Kancheepuram",
+        "Kanchi"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "kanchipuram",
+      "labelPoint": {
+        "x": 725.13,
+        "y": 268.49
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "kanniyakumari",
+      "name": "Kanniyakumari",
+      "aliases": [
+        "Kanyakumari",
+        "Cape Comorin"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "kanniyakumari",
+      "labelPoint": {
+        "x": 364.03,
+        "y": 855.48
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "karur",
+      "name": "Karur",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "karur",
+      "labelPoint": {
+        "x": 457.06,
+        "y": 484.06
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "krishnagiri",
+      "name": "Krishnagiri",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "krishnagiri",
+      "labelPoint": {
+        "x": 492.16,
+        "y": 259.71
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "madurai",
+      "name": "Madurai",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "madurai",
+      "labelPoint": {
+        "x": 438.41,
+        "y": 635.52
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "mayiladuthurai",
+      "name": "Mayiladuthurai",
+      "aliases": [
+        "Mayavaram"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "mayiladuthurai",
+      "labelPoint": {
+        "x": 693.52,
+        "y": 454.6
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "nagapattinam",
+      "name": "Nagapattinam",
+      "aliases": [
+        "Negapatam"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "nagapattinam",
+      "labelPoint": {
+        "x": 699.89,
+        "y": 558.62
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "namakkal",
+      "name": "Namakkal",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "namakkal",
+      "labelPoint": {
+        "x": 473.03,
+        "y": 432.39
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "perambalur",
+      "name": "Perambalur",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "perambalur",
+      "labelPoint": {
+        "x": 581.08,
+        "y": 438.17
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "pudukkottai",
+      "name": "Pudukkottai",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "pudukkottai",
+      "labelPoint": {
+        "x": 577.64,
+        "y": 554.23
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "ramanathapuram",
+      "name": "Ramanathapuram",
+      "aliases": [
+        "Ramnad"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "ramanathapuram",
+      "labelPoint": {
+        "x": 533.05,
+        "y": 707.04
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "ranipet",
+      "name": "Ranipet",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "ranipet",
+      "labelPoint": {
+        "x": 668.72,
+        "y": 190.12
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "salem",
+      "name": "Salem",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "salem",
+      "labelPoint": {
+        "x": 470.82,
+        "y": 369.51
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "sivaganga",
+      "name": "Sivaganga",
+      "aliases": [
+        "Sivagangai"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "sivaganga",
+      "labelPoint": {
+        "x": 546.66,
+        "y": 623.12
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "tenkasi",
+      "name": "Tenkasi",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "tenkasi",
+      "labelPoint": {
+        "x": 381.17,
+        "y": 741.26
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "thanjavur",
+      "name": "Thanjavur",
+      "aliases": [
+        "Tanjore"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "thanjavur",
+      "labelPoint": {
+        "x": 614.69,
+        "y": 504.95
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "the-nilgiris",
+      "name": "The Nilgiris",
+      "aliases": [
+        "Nilgiris",
+        "Ooty"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "the-nilgiris",
+      "labelPoint": {
+        "x": 275.73,
+        "y": 411.61
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "theni",
+      "name": "Theni",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "theni",
+      "labelPoint": {
+        "x": 376.21,
+        "y": 633.39
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "thiruvallur",
+      "name": "Thiruvallur",
+      "aliases": [
+        "Tiruvallur"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "thiruvallur",
+      "labelPoint": {
+        "x": 751.18,
+        "y": 149.25
+      },
+      "labelAnchor": "n",
+      "tier": 2
+    },
+    {
+      "id": "thiruvarur",
+      "name": "Thiruvarur",
+      "aliases": [
+        "Tiruvarur"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "thiruvarur",
+      "labelPoint": {
+        "x": 663.61,
+        "y": 514.36
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "tuticorin",
+      "name": "Tuticorin",
+      "aliases": [
+        "Thoothukkudi",
+        "Thoothukudi"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "tuticorin",
+      "labelPoint": {
+        "x": 452.54,
+        "y": 757.09
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "tiruchirapalli",
+      "name": "Tiruchirapalli",
+      "aliases": [
+        "Tiruchirappalli",
+        "Trichy",
+        "Tiruchi"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "tiruchirapalli",
+      "labelPoint": {
+        "x": 527.63,
+        "y": 464.81
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "tirunelveli",
+      "name": "Tirunelveli",
+      "aliases": [
+        "Nellai"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "tirunelveli",
+      "labelPoint": {
+        "x": 398.67,
+        "y": 810.73
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "tirupathur",
+      "name": "Tirupathur",
+      "aliases": [
+        "Tirupattur"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "tirupathur",
+      "labelPoint": {
+        "x": 540.94,
+        "y": 255.99
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "tiruppur",
+      "name": "Tiruppur",
+      "aliases": [
+        "Tirupur"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "tiruppur",
+      "labelPoint": {
+        "x": 386.87,
+        "y": 490.41
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "tiruvannamalai",
+      "name": "Tiruvannamalai",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "tiruvannamalai",
+      "labelPoint": {
+        "x": 589.05,
+        "y": 291.21
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "vellore",
+      "name": "Vellore",
+      "aliases": [],
+      "groupId": "tamil-nadu",
+      "pathId": "vellore",
+      "labelPoint": {
+        "x": 598.9,
+        "y": 210.9
+      },
+      "labelAnchor": "n",
+      "tier": 3
+    },
+    {
+      "id": "villupuram",
+      "name": "Villupuram",
+      "aliases": [
+        "Viluppuram"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "villupuram",
+      "labelPoint": {
+        "x": 658.01,
+        "y": 311.7
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    },
+    {
+      "id": "virudhunagar",
+      "name": "Virudhunagar",
+      "aliases": [
+        "Virudunagar"
+      ],
+      "groupId": "tamil-nadu",
+      "pathId": "virudhunagar",
+      "labelPoint": {
+        "x": 428.42,
+        "y": 691.94
+      },
+      "labelAnchor": "n",
+      "tier": 1
+    }
+  ]
+}
