@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mapdrill — render harness (dev only)</title>
+    <link rel="stylesheet" href="/src/styles/tokens.css" />
+    <link rel="stylesheet" href="/src/styles/app.css" />
+    <style>
+      /* Harness chrome only — not shipped, so not in app.css. */
+      body {
+        background: #000;
+        color: #fff;
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 24px;
+      }
+      .scene {
+        margin-bottom: 32px;
+      }
+      .scene h2 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 8px;
+      }
+      .scene-frame {
+        /* Matches docs/reference/south-india-labelled.png's pixel size, for a direct visual comparison. */
+        width: 590px;
+        height: 1280px;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Dev-only render harness — not part of the production build. See dev/harness.ts.</p>
+    <div id="harness"></div>
+    <script type="module" src="/dev/harness.ts"></script>
+  </body>
+</html>
