@@ -243,26 +243,41 @@ FAIL  packs/kerala-tamil-nadu
    shapefile or GeoJSON `FeatureCollection` from a government open-data
    portal, Natural Earth, or an OSM extract), one feature per subdivision,
    with a property holding each subdivision's name.
-3. **Convert to pack geometry with `tools/geojson-to-pack.ts`.** This tool
-   does not exist yet in this repo — it's planned, not stubbed, unlike the
-   other `src/`/`tools/` files that currently throw `TODO`. Once built it's
-   intended to take a GeoJSON `FeatureCollection` plus the name of the
-   name-bearing property, and emit:
-   - `geometry.svg` — one `<path id="...">` per feature, reprojected into a
-     chosen `viewBox`, `id`s slugified from each feature's name property;
-   - a draft `pack.json` — `targets` pre-filled with `id`, `name`, and
-     `pathId` (each `labelPoint` defaulted to that feature's path centroid,
-     per "Label placement" below), leaving `groups`/`fillToken`, `aliases`,
-     `labelAnchor` tuning, and `tier` for hand-completion.
-     Until it exists, both files have to be built by hand or with ad hoc
-     scripting against this same contract.
-4. **Hand-complete `pack.json`.** Assign `groups` (decide the
-   state/province split and each one's `fillToken`, adding new tokens to
-   `tokens.css` first if not reusing the existing pair). Fill in `aliases`
-   for common alternate spellings. Review every `labelPoint`/`labelAnchor`
-   the centroid default produced (see "Label placement") and correct the
-   ones that land outside their region or collide with a neighbor. Assign
-   `tier`.
+3. **Convert to pack geometry with `tools/geojson-to-pack.ts`.** Takes a
+   GeoJSON `FeatureCollection` (`--input`), the name-bearing property
+   (`--name-prop`), and the property that both filters to the wanted regions
+   and defines each `Group` (`--group-prop`, `--regions`), and emits a fully
+   schema-valid pack in one pass:
+   - `geometry.svg` — one `<path id="...">` per feature, reprojected into
+     the chosen `viewBox` (equirectangular, scaled for the pack's latitude —
+     see the projection comment in the tool for why that's the right choice
+     at this extent and wrong at a larger one) and simplified
+     (Douglas-Peucker, configurable `--tolerance`); `id`s slugified from each
+     feature's name property;
+   - `pack.json` — `groups` (one per distinct `--group-prop` value, cycling
+     the `region-primary`/`region-secondary` tokens already in
+     `tokens.css` — a pack with more than two groups needs new tokens added
+     there first, and this tool doesn't do that for you); `targets` with
+     `id`/`name`/`pathId` filled in, `aliases: []`, `labelAnchor: "n"` for
+     every target, `tier` assigned by rank of projected area into thirds
+     (largest third -> 1, smallest third -> 3), and `labelPoint` computed by
+     pole of inaccessibility, not centroid, per "Label placement" below.
+
+   None of this is a substitute for the hand-completion pass in step 4 below
+   — aliases, `labelAnchor`/`labelPoint` fixes for crowded labels, and tier
+   review for a district whose prominence doesn't track its raw area still
+   need a human. It just means step 4 starts from a valid, plausible pack
+   instead of a blank one.
+
+4. **Hand-complete `pack.json`.** Review the `groups` the tool assigned
+   (decide the state/province split is right, add new tokens to
+   `tokens.css` and reassign `fillToken` for any group past the first two —
+   the tool only cycles the existing `region-primary`/`region-secondary`
+   pair). Fill in `aliases` for common alternate spellings. Review every
+   `labelPoint`/`labelAnchor` the pole-of-inaccessibility default produced
+   (see "Label placement") and correct the ones that collide with a
+   neighbor. Review `tier` for any district whose prominence doesn't track
+   its raw area.
 5. **Write `SOURCE.md`** with the five required fields above.
 6. **Run `npm run validate:packs`** and fix everything it reports, until
    the pack shows `OK`.
@@ -274,21 +289,23 @@ FAIL  packs/kerala-tamil-nadu
 
 ## Label placement
 
-`labelPoint` is meant to default to the target's path centroid — that's
-what step 3 of the walkthrough above (`tools/geojson-to-pack.ts`, once
-built) is expected to compute automatically. But a centroid is only a
-starting point, not a final answer, for two recurring reasons a pack author
-has to fix by hand:
+`labelPoint` defaults to the target's **pole of inaccessibility** (the point
+inside the polygon farthest from any edge) — that's what step 3 of the
+walkthrough above (`tools/geojson-to-pack.ts`) computes automatically,
+deliberately not the simpler area centroid. A centroid is computed from the
+polygon's area, not its outline — for a crescent-, horseshoe-, or
+coastline-hugging district, the geometric centroid can land outside the
+shape entirely (in the bay a crescent wraps around, for instance), and the
+map view doesn't clip or reposition labels that fall outside their own path,
+so a centroid there renders a label floating over a neighboring region. Pole
+of inaccessibility is guaranteed to land inside the polygon, which is what a
+label anchor point actually needs — but it's still only a starting point,
+not a final answer, for one recurring reason a pack author has to fix by
+hand:
 
-- **Concave regions.** A centroid is computed from the polygon's area, not
-  its outline — for a crescent-, horseshoe-, or coastline-hugging district,
-  the geometric centroid can land outside the shape entirely (in the bay a
-  crescent wraps around, for instance). The map view doesn't clip or
-  reposition labels that fall outside their own path, so an unfixed
-  centroid here renders a label floating over a neighboring region.
 - **Dense clusters.** Where several small subdivisions sit close together
-  (common in a district-level pack), their centroids can sit close enough
-  that revealed labels overlap or collide, even though each centroid is
+  (common in a district-level pack), their label points can sit close
+  enough that revealed labels overlap or collide, even though each one is
   individually correct for its own shape.
 
 `labelPoint` and `labelAnchor` both exist as hand-tunable overrides for
