@@ -2,9 +2,11 @@
  * Label placement solver: positions one label per visible target at
  * target.labelPoint, resolving collisions by greedy first-fit across the 8
  * compass anchors, honouring each target's hand-tuned labelAnchor as the
- * first candidate. Pure geometry — no DOM, no correctness decisions about
- * the session. Mounting the result as SVG <text>/<line> elements is a later
- * integration step; this module produces the layout that step draws.
+ * first candidate. The solver (everything above `createLabelLayer`) is
+ * pure geometry — no DOM, no correctness decisions about the session.
+ * `createLabelLayer` is the DOM wrapper around it: it consumes the
+ * solver's output to draw, it never feeds back into how the solver
+ * decides a layout.
  */
 import type { LabelAnchor, Target, TargetState } from '../engine/types';
 
@@ -203,4 +205,79 @@ export function layoutLabels(
   }
 
   return { placements, suppressed };
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+export interface LabelLayer {
+  el: SVGGElement;
+  /**
+   * Recomputes the layout for `targets`/`targetStates` and replaces the
+   * layer's <text>/<line> children to match — clears first, so a shrinking
+   * visible set never leaks a stale label. Returns the same
+   * LabelLayoutResult layoutLabels would, so a caller (mapSurface) can
+   * report `suppressed` on upward.
+   */
+  applyLayout(
+    targets: readonly Target[],
+    targetStates: ReadonlyMap<Target['id'], TargetState>,
+    options?: LabelLayoutOptions,
+  ): LabelLayoutResult;
+  destroy(): void;
+}
+
+/**
+ * DOM wrapper around layoutLabels: one <text> per placement, plus a <line>
+ * leader for every placement with `leader: true`. Colour/font come from
+ * CSS classes (.label-text/.label-leader in app.css), not attributes set
+ * here — same "class, not JS-set fill" rule as mapSurface.ts.
+ */
+export function createLabelLayer(): LabelLayer {
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'label-layer');
+
+  function applyLayout(
+    targets: readonly Target[],
+    targetStates: ReadonlyMap<Target['id'], TargetState>,
+    options?: LabelLayoutOptions,
+  ): LabelLayoutResult {
+    const result = layoutLabels(targets, targetStates, options);
+    g.replaceChildren();
+
+    const byId = new Map(targets.map((t) => [t.id, t]));
+    for (const placement of result.placements) {
+      const target = byId.get(placement.targetId);
+      if (!target) continue;
+
+      const cx = placement.box.x + placement.box.width / 2;
+      const cy = placement.box.y + placement.box.height / 2;
+
+      if (placement.leader) {
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('class', 'label-leader');
+        line.setAttribute('x1', String(target.labelPoint.x));
+        line.setAttribute('y1', String(target.labelPoint.y));
+        line.setAttribute('x2', String(cx));
+        line.setAttribute('y2', String(cy));
+        g.appendChild(line);
+      }
+
+      const text = document.createElementNS(SVG_NS, 'text');
+      text.setAttribute('class', 'label-text');
+      text.setAttribute('x', String(cx));
+      text.setAttribute('y', String(cy));
+      text.textContent = target.name;
+      g.appendChild(text);
+    }
+
+    return result;
+  }
+
+  return {
+    el: g,
+    applyLayout,
+    destroy() {
+      g.remove();
+    },
+  };
 }

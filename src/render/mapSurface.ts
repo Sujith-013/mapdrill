@@ -7,14 +7,23 @@
  * swap on the target's <path>; this module never sets a `fill`/`stroke`
  * attribute directly. See src/styles/app.css for what each class paints,
  * and theme.ts for the token names behind those classes.
+ *
+ * Labels are delegated to labels.ts's createLabelLayer: applyState hands it
+ * the same session's targetStates on every call, and the layer's own
+ * suppressed-list return is threaded back out of applyState.
  */
-import type { Pack, Session, Target } from '../engine/types';
+import type { Pack, Session, Target, TargetState } from '../engine/types';
+import { createLabelLayer } from './labels';
 import { regionFillToken, type Phase, type VisualState } from './theme';
 
 export interface MapSurface {
   el: SVGSVGElement;
-  /** Reconciles every target's <path> against a session snapshot. Idempotent. */
-  applyState(session: Session): void;
+  /**
+   * Reconciles every target's <path> and the label layer against a session
+   * snapshot. Idempotent. Returns ids of targets whose label couldn't be
+   * placed this pass, so the caller can surface them on hover.
+   */
+  applyState(session: Session): Array<Target['id']>;
   /** Switches the base region-fill saturation (see theme.ts Phase). */
   setPhase(phase: Phase): void;
   /** Registers the handler fired with a target id on click, Mode B only. */
@@ -74,10 +83,14 @@ export function createMapSurface(
     });
   }
 
+  const labelLayer = createLabelLayer();
+  svg.appendChild(labelLayer.el);
+
   container.replaceChildren(svg);
 
   let phase: Phase = 'preview';
   let lastSession: Session | null = null;
+  let lastSuppressed: Array<Target['id']> = [];
   let clickHandler: ((targetId: Target['id']) => void) | null = null;
 
   function render(): void {
@@ -98,6 +111,9 @@ export function createMapSurface(
       }
       b.el.setAttribute('class', classes.join(' '));
     }
+
+    const targetStates = lastSession?.targetStates ?? new Map<Target['id'], TargetState>();
+    lastSuppressed = labelLayer.applyLayout(pack.targets, targetStates).suppressed;
   }
 
   function onClick(event: Event): void {
@@ -117,6 +133,7 @@ export function createMapSurface(
     applyState(session) {
       lastSession = session;
       render();
+      return lastSuppressed;
     },
     setPhase(next) {
       phase = next;
@@ -127,6 +144,7 @@ export function createMapSurface(
     },
     destroy() {
       svg.removeEventListener('click', onClick);
+      labelLayer.destroy();
       svg.remove();
     },
   };

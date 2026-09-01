@@ -67,3 +67,21 @@
 .map-surface path.missed {
   fill: var(--state-missed);
 }
+
+/* Label layer (src/render/labels.ts's createLabelLayer, mounted by mapSurface). */
+.label-layer {
+  pointer-events: none;
+}
+
+.label-layer .label-text {
+  fill: var(--label-color);
+  font-family: var(--label-font);
+  font-size: var(--label-font-size);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.label-layer .label-leader {
+  stroke: var(--label-color-muted);
+  stroke-width: 0.75px;
+}

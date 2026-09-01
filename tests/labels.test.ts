@@ -1,8 +1,10 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import southIndiaPackJson from '../packs/south-india-districts/pack.json';
 import {
   ANCHOR_ORDER,
   boxForAnchor,
+  createLabelLayer,
   estimateLabelSize,
   FAR_GAP,
   layoutLabels,
@@ -166,5 +168,91 @@ describe('placeSingleLabel', () => {
     const result = placeSingleLabel(point, 'w' as LabelAnchor, width, height, []);
     expect(result?.anchor).toBe('w');
     expect(result?.leader).toBe(false);
+  });
+});
+
+describe('createLabelLayer', () => {
+  it('emits one <text> per placed target for a given snapshot, none for unsolved or suppressed', () => {
+    const targets = [
+      makeTarget({ id: 'a', name: 'Alpha', labelPoint: { x: 0, y: 0 } }),
+      makeTarget({ id: 'b', name: 'Bravo', labelPoint: { x: 500, y: 0 } }),
+      makeTarget({ id: 'c', name: 'Charlie', labelPoint: { x: 0, y: 500 } }),
+      makeTarget({ id: 'd', name: 'Delta', labelPoint: { x: 500, y: 500 } }),
+    ];
+    const states = new Map<string, TargetState>([
+      ['a', 'solved'],
+      ['b', 'solvedRetry'],
+      ['c', 'missed'],
+      ['d', 'unsolved'],
+    ]);
+
+    const layer = createLabelLayer();
+    const result = layer.applyLayout(targets, states);
+
+    expect(result.suppressed).toEqual([]);
+    expect(layer.el.querySelectorAll('.label-text').length).toBe(3);
+    const names = [...layer.el.querySelectorAll('.label-text')].map((t) => t.textContent).sort();
+    expect(names).toEqual(['Alpha', 'Bravo', 'Charlie']);
+  });
+
+  // 20 targets crammed onto one point guarantees a mix of near-gap, leader,
+  // and suppressed outcomes (verified empirically: 9 placed — 3 near, 6
+  // leader — and 11 suppressed), without hand-choreographing collisions.
+  const crowdedPoint = { x: 300, y: 300 };
+  const crowdedTargets = Array.from({ length: 20 }, (_, i) =>
+    makeTarget({ id: `t${i}`, name: 'District', labelPoint: crowdedPoint, tier: 1 }),
+  );
+  const crowdedStates = new Map<string, TargetState>(crowdedTargets.map((t) => [t.id, 'solved']));
+
+  it('emits a leader <line> only for placements the solver flagged leader:true', () => {
+    const layer = createLabelLayer();
+    const result = layer.applyLayout(crowdedTargets, crowdedStates);
+    const leaderCount = result.placements.filter((p) => p.leader).length;
+
+    expect(leaderCount).toBeGreaterThan(0); // fixture actually exercises the leader path
+    expect(leaderCount).toBeLessThan(result.placements.length); // and the near-gap path too
+    expect(layer.el.querySelectorAll('.label-leader').length).toBe(leaderCount);
+    expect(layer.el.querySelectorAll('.label-text').length).toBe(result.placements.length);
+  });
+
+  it('reports suppression upward instead of silently dropping labels', () => {
+    const layer = createLabelLayer();
+    const result = layer.applyLayout(crowdedTargets, crowdedStates);
+
+    expect(result.suppressed.length).toBeGreaterThan(0);
+    expect(result.placements.length + result.suppressed.length).toBe(crowdedTargets.length);
+  });
+
+  it('clears and re-emits on state change: no duplicates, no leaked stale labels', () => {
+    const targets = [
+      makeTarget({ id: 'a', name: 'Alpha', labelPoint: { x: 0, y: 0 } }),
+      makeTarget({ id: 'b', name: 'Bravo', labelPoint: { x: 500, y: 0 } }),
+    ];
+    const layer = createLabelLayer();
+
+    layer.applyLayout(targets, new Map<string, TargetState>([['a', 'solved']]));
+    expect([...layer.el.querySelectorAll('.label-text')].map((t) => t.textContent)).toEqual([
+      'Alpha',
+    ]);
+
+    // Grow: a newly-solved target must appear, the old one must still be there once, not twice.
+    layer.applyLayout(
+      targets,
+      new Map<string, TargetState>([
+        ['a', 'solved'],
+        ['b', 'solved'],
+      ]),
+    );
+    expect([...layer.el.querySelectorAll('.label-text')].map((t) => t.textContent).sort()).toEqual([
+      'Alpha',
+      'Bravo',
+    ]);
+
+    // Shrink: b drops out of view again — its label must not linger.
+    layer.applyLayout(targets, new Map<string, TargetState>([['b', 'solved']]));
+    expect([...layer.el.querySelectorAll('.label-text')].map((t) => t.textContent)).toEqual([
+      'Bravo',
+    ]);
+    expect(layer.el.children.length).toBe(1); // no leaked leader lines or duplicate nodes either
   });
 });
