@@ -22,7 +22,8 @@ export interface Hud {
 /** How long the give-up button stays in its "click again to confirm" state before reverting unconfirmed. */
 const GIVE_UP_CONFIRM_TIMEOUT_MS = 3000;
 
-function formatTime(ms: number | null): string {
+/** mm:ss, floored at 0; "--:--" for null (untimed). Shared with resultPanel.ts's "time taken". */
+export function formatTime(ms: number | null): string {
   if (ms === null) return '--:--';
   const totalSeconds = Math.max(0, Math.round(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);

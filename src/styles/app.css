@@ -1,7 +1,5 @@
 /**
  * App-level layout and component styles.
- * TODO: results panel (src/ui/results-panel.ts) — src/app.ts's end-of-round
- * banner is a placeholder for it, not the real thing.
  * Consumes tokens from tokens.css — no hardcoded colors here.
  */
 
@@ -30,7 +28,7 @@ body {
 }
 
 .app-start,
-.app-end-banner button {
+.result-actions button {
   font-family: var(--font-ui);
   font-size: 16px;
   padding: 10px 24px;
@@ -41,19 +39,72 @@ body {
   cursor: pointer;
 }
 
-.app-end-banner {
+/* Result panel (src/ui/resultPanel.ts) ------------------------------------ */
+
+.result-panel {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
   font-size: 16px;
 }
 
-/* The class rule above sets display:flex unconditionally, which — being an
-   author rule on a class selector — beats the UA stylesheet's [hidden]
+/* .result-panel sets display:flex unconditionally above, which — an author
+   rule on a class selector — beats the UA stylesheet's [hidden]
    { display: none } (an attribute selector, lower specificity). Without
-   this, toggling the `hidden` property from JS stops hiding the banner. */
-.app-end-banner[hidden] {
+   this override, toggling the `hidden` property from JS stops hiding the
+   panel (see the identical footgun this fixed in the give-up/play-again
+   banner it replaced). */
+.result-panel[hidden] {
   display: none;
+}
+
+.result-panel h2 {
+  margin: 0;
+  color: var(--title-primary);
+}
+
+.result-time {
+  color: var(--label-color-muted);
+}
+
+.result-missed {
+  width: 100%;
+  text-align: center;
+}
+
+.result-missed h3 {
+  color: var(--title-accent);
+  font-size: 15px;
+  margin: 8px 0 4px;
+}
+
+.result-missed-groups {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.result-missed-group h4 {
+  color: var(--title-primary);
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+.result-missed-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--label-color-muted);
+  font-size: 14px;
+}
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 /* Map surface (src/render/mapSurface.ts) --------------------------------- */

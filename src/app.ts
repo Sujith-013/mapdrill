@@ -12,6 +12,7 @@ import { createCompassRose } from './render/compass';
 import { createMapSurface, type MapSurface } from './render/mapSurface';
 import { createAnswerBox } from './ui/answerBox';
 import { createHud } from './ui/hud';
+import { createResultPanel } from './ui/resultPanel';
 
 export interface AppOptions {
   root: HTMLElement;
@@ -63,16 +64,8 @@ export function mountApp(options: AppOptions): AppHandle {
   startButton.textContent = 'Start';
   layout.appendChild(startButton);
 
-  const endBanner = document.createElement('div');
-  endBanner.className = 'app-end-banner';
-  endBanner.hidden = true;
-  const endMessage = document.createElement('span');
-  endBanner.appendChild(endMessage);
-  const playAgainButton = document.createElement('button');
-  playAgainButton.type = 'button';
-  playAgainButton.textContent = 'Play again';
-  endBanner.appendChild(playAgainButton);
-  layout.appendChild(endBanner);
+  const resultPanel = createResultPanel();
+  layout.appendChild(resultPanel.el);
 
   let surface: MapSurface = mountSurface();
   let controller = new SessionController(pack, mode);
@@ -107,11 +100,25 @@ export function mountApp(options: AppOptions): AppHandle {
       answerBox.setDisabled(ended);
       if (ended) {
         surface.setPhase('results');
-        const breakdown = score(session);
-        endMessage.textContent = `${describeEnd(session.status)} — ${breakdown.solved} / ${breakdown.total}`;
-        endBanner.hidden = false;
+        resultPanel.setState({ session, pack, breakdown: score(session) });
+        resultPanel.el.hidden = false;
       }
     });
+  }
+
+  /** Tears down the current controller/surface and starts fresh with `next` — shared by "Play again" and "Replay the misses". */
+  function switchController(next: SessionController): void {
+    unsubscribe();
+    controller = next;
+    unsubscribe = wireController(controller);
+    isPaused = false;
+    resultPanel.el.hidden = true;
+    startButton.hidden = false;
+    answerBox.setDisabled(false);
+    answerBox.clear();
+    surface.destroy();
+    surface = mountSurface();
+    renderHud();
   }
 
   answerBox.onInput((value) => {
@@ -144,18 +151,12 @@ export function mountApp(options: AppOptions): AppHandle {
     startButton.hidden = true;
   });
 
-  playAgainButton.addEventListener('click', () => {
-    unsubscribe();
-    controller = new SessionController(pack, mode);
-    unsubscribe = wireController(controller);
-    isPaused = false;
-    endBanner.hidden = true;
-    startButton.hidden = false;
-    answerBox.setDisabled(false);
-    answerBox.clear();
-    surface.destroy();
-    surface = mountSurface();
-    renderHud();
+  resultPanel.onPlayAgain(() => {
+    switchController(new SessionController(pack, mode));
+  });
+
+  resultPanel.onReplayMisses(() => {
+    switchController(controller.replayMisses());
   });
 
   const intervalId = setInterval(() => controller.tick(), TICK_INTERVAL_MS);
@@ -171,21 +172,9 @@ export function mountApp(options: AppOptions): AppHandle {
       unsubscribe();
       answerBox.destroy();
       hud.destroy();
+      resultPanel.destroy();
       surface.destroy();
       layout.remove();
     },
   };
-}
-
-function describeEnd(status: Session['status']): string {
-  switch (status) {
-    case 'complete':
-      return 'Solved!';
-    case 'surrendered':
-      return 'Gave up';
-    case 'timeout':
-      return "Time's up";
-    default:
-      return '';
-  }
 }

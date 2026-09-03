@@ -75,7 +75,25 @@ describe('mountApp — Mode A end to end', () => {
     expect(input.disabled).toBe(true);
     expect(root.querySelector(`#${pack.targets[0]!.id}`)!.classList.contains('solved')).toBe(true);
     expect(root.querySelectorAll('.target.missed').length).toBe(pack.targets.length - 1);
-    expect(root.querySelector('.app-end-banner')!.hasAttribute('hidden')).toBe(false);
+    expect(root.querySelector('.result-panel')!.hasAttribute('hidden')).toBe(false);
+
+    // The missed list on screen matches exactly what the map painted red.
+    const missedOnMap = new Set([...root.querySelectorAll('.target.missed')].map((el) => el.id));
+    const missedInPanel = [...root.querySelectorAll('.result-missed-group li')].map(
+      (li) => li.textContent,
+    );
+    expect(missedInPanel.length).toBe(missedOnMap.size);
+  });
+
+  it('solving every target reaches COMPLETE with no missed section', () => {
+    const { root, input } = mount();
+    root.querySelector<HTMLButtonElement>('.app-start')!.click();
+    for (const t of pack.targets) type(input, t.name);
+
+    expect(root.querySelector('.hud-score')!.textContent).toBe('52 / 52');
+    expect(root.querySelector('.result-panel')!.hasAttribute('hidden')).toBe(false);
+    expect(root.querySelector('.result-missed')!.hasAttribute('hidden')).toBe(true);
+    expect(root.querySelector('h2')!.textContent).toContain('Solved!');
   });
 
   it('"Play again" resets the score and re-enables input', () => {
@@ -86,10 +104,40 @@ describe('mountApp — Mode A end to end', () => {
     giveUp.click();
     giveUp.click();
 
-    root.querySelector<HTMLButtonElement>('.app-end-banner button')!.click();
+    root.querySelector<HTMLButtonElement>('.result-play-again')!.click();
 
     expect(root.querySelector('.hud-score')!.textContent).toBe('0 / 52');
     expect(root.querySelector('input')!.disabled).toBe(false);
-    expect(root.querySelector('.app-end-banner')!.hasAttribute('hidden')).toBe(true);
+    expect(root.querySelector('.result-panel')!.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('"Replay the misses" starts a fresh session scoped to exactly the missed ids', () => {
+    const { root, input } = mount();
+    root.querySelector<HTMLButtonElement>('.app-start')!.click();
+
+    // Solve everything except the last two targets, then give up.
+    const missed = pack.targets.slice(-2);
+    for (const t of pack.targets.slice(0, -2)) type(input, t.name);
+    const giveUp = root.querySelector<HTMLButtonElement>('.hud-give-up')!;
+    giveUp.click();
+    giveUp.click();
+
+    root.querySelector<HTMLButtonElement>('.result-replay')!.click();
+
+    // Fresh IDLE session, scoped to just the 2 missed ids.
+    expect(root.querySelector('.result-panel')!.hasAttribute('hidden')).toBe(true);
+    expect(root.querySelector('.hud-score')!.textContent).toBe('0 / 2');
+    expect(root.querySelector('input')!.disabled).toBe(false);
+
+    root.querySelector<HTMLButtonElement>('.app-start')!.click();
+
+    // Only the replayed subset can be solved.
+    type(input, pack.targets[0]!.name); // was already solved last round — not tracked this round
+    expect(root.querySelector('.hud-score')!.textContent).toBe('0 / 2');
+
+    type(input, missed[0]!.name);
+    expect(root.querySelector('.hud-score')!.textContent).toBe('1 / 2');
+    type(input, missed[1]!.name);
+    expect(root.querySelector('.hud-score')!.textContent).toBe('2 / 2');
   });
 });
