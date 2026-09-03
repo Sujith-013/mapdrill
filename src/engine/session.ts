@@ -102,15 +102,23 @@ export class SessionController {
   }
 
   /**
-   * Checks the timer and drives RUNNING -> TIMEOUT once the budget is
-   * spent. Safe to call on any cadence, in any status — a no-op unless the
-   * session is running and expired.
+   * Refreshes the broadcast `elapsedMs` and, once the budget is spent,
+   * drives RUNNING -> TIMEOUT. Safe to call on any cadence, in any status
+   * — a no-op outside 'running' (while paused, the timer itself is frozen
+   * so this still notifies but elapsedMs won't have moved). This is the
+   * *only* thing that keeps a displayed countdown live: state-changing
+   * actions (submitAnswer, giveUp, ...) each notify with elapsedMs as of
+   * that moment, but nothing else re-notifies on the ordinary passage of
+   * time — a UI polling this on an interval is what a visible mm:ss
+   * counting down depends on.
    */
   tick(): ActionResult {
-    if (this.data.status !== 'running' || !this.timer.isExpired()) return ok;
-    this.fillMissed();
-    this.timer.stop();
-    this.data = { ...this.data, status: 'timeout', armedTargetId: null };
+    if (this.data.status !== 'running') return ok;
+    if (this.timer.isExpired()) {
+      this.fillMissed();
+      this.timer.stop();
+      this.data = { ...this.data, status: 'timeout', armedTargetId: null };
+    }
     this.notify();
     return ok;
   }

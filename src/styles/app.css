@@ -1,8 +1,60 @@
 /**
  * App-level layout and component styles.
- * TODO: layout for input box, timer, results panel.
+ * TODO: results panel (src/ui/results-panel.ts) — src/app.ts's end-of-round
+ * banner is a placeholder for it, not the real thing.
  * Consumes tokens from tokens.css — no hardcoded colors here.
  */
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--plate-bg);
+  color: var(--title-primary);
+}
+
+/* App shell (src/app.ts) -------------------------------------------------- */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  font-family: var(--font-ui);
+}
+
+.app-map {
+  width: 100%;
+}
+
+.app-start,
+.app-end-banner button {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline-color);
+  background: var(--plate-bg-alt);
+  color: var(--title-primary);
+  cursor: pointer;
+}
+
+.app-end-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+}
+
+/* The class rule above sets display:flex unconditionally, which — being an
+   author rule on a class selector — beats the UA stylesheet's [hidden]
+   { display: none } (an attribute selector, lower specificity). Without
+   this, toggling the `hidden` property from JS stops hiding the banner. */
+.app-end-banner[hidden] {
+  display: none;
+}
 
 /* Map surface (src/render/mapSurface.ts) --------------------------------- */
 

@@ -11,8 +11,9 @@ export default defineConfig({
     // never referenced from it, so it can't end up in the shipped bundle.
   },
   server: {
-    // The app itself is still a TODO stub (see src/main.ts); open the dev
-    // render harness instead so `npm run dev` shows something real.
-    open: '/dev/harness.html',
+    // src/main.ts boots the real app now — open it by default. The dev
+    // render harness (dev/harness.html) is still there for eyeballing
+    // renderer-only changes; open it explicitly when that's what you want.
+    open: '/index.html',
   },
 });
