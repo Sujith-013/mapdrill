@@ -70,8 +70,24 @@ function renderScene(spec: SceneSpec): { el: HTMLElement; suppressedCount: numbe
   return { el: wrapper, suppressedCount: suppressed.length };
 }
 
-const solved = allIds.slice(0, 15).map((id): [string, TargetState] => [id, 'solved']);
-const retried = allIds.slice(15, 18).map((id): [string, TargetState] => [id, 'solvedRetry']);
+// Scene 2 draws its solved/retried/armed targets from *both* groups rather
+// than a plain positional slice of allIds — a slice(0, 15) happens to be
+// every Kerala district plus one, which leaves zero unsolved Kerala targets
+// on screen and makes the muted-fill scene unable to show region-primary
+// -muted at all (only region-secondary-muted). Pulling from each group
+// keeps some of both unsolved so the play scene actually exercises (and a
+// screenshot can actually judge) both muted base fills side by side.
+function idsForGroup(groupId: string): string[] {
+  return pack.targets.filter((t) => t.groupId === groupId).map((t) => t.id);
+}
+const keralaIds = idsForGroup('kerala');
+const tamilNaduIds = idsForGroup('tamil-nadu');
+
+const solved = [...keralaIds.slice(0, 8), ...tamilNaduIds.slice(0, 7)].map(
+  (id): [string, TargetState] => [id, 'solved'],
+);
+const retried = tamilNaduIds.slice(7, 10).map((id): [string, TargetState] => [id, 'solvedRetry']);
+const armedTargetId = tamilNaduIds[10]!;
 const missed = allIds.map((id): [string, TargetState] => [id, 'missed']);
 const allSolved = allIds.map((id): [string, TargetState] => [id, 'solved']);
 
@@ -85,10 +101,10 @@ const scenes: SceneSpec[] = [
     title: '2. play — 15 solved, 3 solvedRetry, 1 armed',
     targetStates: withStates([...solved, ...retried]),
     phase: 'play',
-    armedTargetId: allIds[18]!,
+    armedTargetId,
   },
   {
-    title: '3. results — give-up, all 52 revealed missed',
+    title: '3. give-up — all 52 revealed missed, labels shown',
     targetStates: withStates(missed),
     phase: 'results',
   },
