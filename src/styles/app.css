@@ -129,3 +129,112 @@
   stroke: var(--label-color-muted);
   stroke-width: 0.75px;
 }
+
+/* Answer box (src/ui/answerBox.ts) --------------------------------------- */
+
+.answer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.answer-box .armed-label {
+  color: var(--label-color);
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.answer-box input {
+  font-family: var(--font-ui);
+  font-size: 18px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline-color);
+  background: var(--plate-bg-alt);
+  color: var(--title-primary);
+  text-align: center;
+}
+
+.answer-box input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rejection animation for Mode B wrong answers — never touches the value,
+   just a quick shake, cleared by createAnswerBox on 'animationend'. */
+.answer-box.shake input {
+  animation: answer-box-shake 0.3s ease-in-out;
+  border-color: var(--state-missed);
+}
+
+@keyframes answer-box-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* HUD (src/ui/hud.ts) ----------------------------------------------------- */
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-ui);
+}
+
+.hud-score {
+  color: var(--title-primary);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.hud-timer {
+  color: var(--title-accent);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-pause {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline-color);
+  background: var(--plate-bg-alt);
+  color: var(--title-primary);
+  cursor: pointer;
+}
+
+/* De-emphasised — a text action, not a button, per the reference art's
+   restrained chrome. Only the confirm step below raises its visual weight,
+   matching the destructiveness of what a second click actually does. */
+.hud-give-up {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--label-color-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hud-give-up.confirming {
+  color: var(--state-missed);
+}
